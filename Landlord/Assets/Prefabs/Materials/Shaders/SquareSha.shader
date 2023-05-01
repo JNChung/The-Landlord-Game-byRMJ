@@ -34,14 +34,12 @@ Shader "Unlit/SquareSha"
                 //UNITY_FOG_COORDS(1)
                 float4 vertex : SV_POSITION;
             };
-            float _OutLineWidth;
             sampler2D _MainTex;
             float4 _MainTex_ST;
 
             v2f vert (appdata v)
             {
                 v2f o;
-                v.vertex.xy *= 1+_OutLineWidth;
                 //o.vertex = UnityObjectToClipPos(v.vertex);
                 o.vertex = UnityObjectToClipPos(v.vertex);
                 o.uv = v.uv;
@@ -84,12 +82,14 @@ Shader "Unlit/SquareSha"
                 float4 vertex : SV_POSITION;
             };
 
+            float _OutLineWidth;
             sampler2D _MainTex;
             float4 _MainTex_ST;
 
             v2f vert (appdata v)
             {
                 v2f o;
+                v.vertex.xy *= 1-_OutLineWidth;
                 //o.vertex = UnityObjectToClipPos(v.vertex);
                 o.vertex = UnityObjectToClipPos(v.vertex);
                 o.uv = v.uv;
