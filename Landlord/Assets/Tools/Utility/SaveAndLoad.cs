@@ -81,7 +81,7 @@ namespace RonTools
         {
             if (string.IsNullOrEmpty(filename)) return false;
 
-            return File.Exists(filename);
+            return File.Exists(fullname);
         }
         public void EasySaveLoadButNotUseful()
         {
