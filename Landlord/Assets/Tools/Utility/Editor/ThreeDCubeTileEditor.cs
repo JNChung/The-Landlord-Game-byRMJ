@@ -20,7 +20,7 @@ namespace Ron.Tools
     }
     public class ThreeDCubeTileEditor : EditorWindow
     {
-        GameObject tileMap;
+        static GameObject tileMap;
         GameObject TileMap
         {
             set { tileMap = value; }
@@ -200,8 +200,8 @@ namespace Ron.Tools
             if (mouseRay.direction.y <= 0) //代表滑鼠點擊處在畫面內
             {
                 mouseRay.origin -= h;
-                float _ = -mouseRay.origin.y / mouseRay.direction.y;
-                MouseWorldPosition = mouseRay.origin + layerHeight * mouseRay.direction + h;
+                float t = -mouseRay.origin.y / mouseRay.direction.y;
+                MouseWorldPosition = mouseRay.origin + t * mouseRay.direction + h;
                 return true;
             }
             else
@@ -216,7 +216,26 @@ namespace Ron.Tools
         }
         void SaveData(string filename) { }
         void LoadData(string filename) { }
-
+        Vector3Int V3ToV3Int(Vector3 val)
+        {
+            int x = Mathf.RoundToInt(val.x);
+            int y = Mathf.RoundToInt(val.y);
+            int z = Mathf.RoundToInt(val.z);
+            return new Vector3Int(x, y, z);
+        }
+        Texture2D MakeTex(int width, int height, Color color)
+        {
+            Color[] pixels = new Color[width * height];
+            int length = pixels.Length;
+            for (int i = 0; i < length; i++)
+            {
+                pixels[i] = color;
+            }
+            Texture2D r = new Texture2D(width, height);
+            r.SetPixels(pixels, 0);
+            r.Apply();
+            return r;
+        }
         //系統用函式
         private void OnFocus()
         {
@@ -226,11 +245,191 @@ namespace Ron.Tools
         }
         private void OnEnable()
         {
-
+            SceneView.duringSceneGui += this.OnSceneGUI;
         }
         private void OnDisable()
         {
+            SceneView.duringSceneGui -= this.OnSceneGUI;
+        }
+        // SceneView 繪製用函式
+        [DrawGizmo(GizmoType.NonSelected)]
+        static void RenderGridGizmo(Transform objectTransform, GizmoType gizmoType)
+        {
+            if (layerObjs.Count == 0 || tileMap == null) return;
+            if (showGrid)
+            {
+                int s = (gridCount + 1) / 2;
+                int h = Mathf.RoundToInt(layerObjs[selectedLayer].transform.position.y);
+                Gizmos.color = gridColor;
+                float offset = 0.5f * mapUnitSize;
+                for (int i = -s; i < s; i++)
+                {
+                    Gizmos.DrawLine(new Vector3(-s * mapUnitSize + offset, h, i * mapUnitSize + offset),
+                        new Vector3(s * mapUnitSize - offset, h, i * mapUnitSize + offset));
+                    Gizmos.DrawLine(new Vector3(i * mapUnitSize + offset, h, -s * mapUnitSize + offset), new Vector3(i * mapUnitSize + offset, h, s * mapUnitSize - offset));
+                }
+            }
+        }
+        void OnSceneGUI(SceneView sceneView)//繪製各種UI物件
+        {
+            //Handles.BeginGUI();
+            //{
+            //   若有需要在 SceneView 繪製各種UI功能
+            //}
+            //Handles.EndGUI();
+            //onPainting = true;  //測試用
+            if (!onPainting) return;
+            int controlID = GUIUtility.GetControlID(FocusType.Passive);
+            Event e = Event.current;
+            if (e.alt) return;//alt被按下表示使用者要旋轉畫面，不要進行繪製。
+            switch (e.GetTypeForControl(controlID))
+            {
+                case EventType.MouseDown://開始繪製
+                    if (e.button == 0)
+                    {
+                        GUIUtility.hotControl = controlID;
+                        mouseDown = true;
+                        Event.current.Use();
+                    }
+                    break;
+                case EventType.MouseUp://停止繪製
+                    if (e.button != 0) break;
+                    GUIUtility.hotControl = 0;
+                    mouseDown = false;
+                    Event.current.Use();
+                    break;
+                case EventType.MouseMove:
+                    break;
+                case EventType.MouseDrag:
+                    break;
+                case EventType.KeyDown:
+                    break;
+                case EventType.KeyUp:
+                    break;
+                case EventType.ScrollWheel:
+                    break;
+                case EventType.Repaint:
+                    break;
+                case EventType.Layout:
+                    break;
+                case EventType.DragUpdated:
+                    break;
+                case EventType.DragPerform:
+                    break;
+                case EventType.DragExited:
+                    break;
+                case EventType.Ignore:
+                    break;
+                case EventType.Used:
+                    break;
+                case EventType.ValidateCommand:
+                    break;
+                case EventType.ExecuteCommand:
+                    break;
+                case EventType.ContextClick:
+                    break;
+                case EventType.MouseEnterWindow:
+                    break;
+                case EventType.MouseLeaveWindow:
+                    break;
+                case EventType.TouchDown:
+                    break;
+                case EventType.TouchUp:
+                    break;
+                case EventType.TouchMove:
+                    break;
+                case EventType.TouchEnter:
+                    break;
+                case EventType.TouchLeave:
+                    break;
+                case EventType.TouchStationary:
+                    break;
+                default:
+                    break;
+            }
+            var pos = Vector3.zero;
+            Vector3Int posInt = Vector3Int.zero;
+            int dx = 0, dy = 0, dz = 0;
+            bool mouseInWorld = MouseToWorldPosition(e.mousePosition, Mathf.RoundToInt(layerObjs[selectedLayer].transform.position.y), out pos);
 
+            //繪製游標
+            if (mouseInWorld)
+            {
+                posInt = V3ToV3Int(pos);
+                dy = posInt.y;
+                dx = (posInt.x / mapUnitSize) * mapUnitSize; //貼齊格線小技巧
+                dz = (posInt.z / mapUnitSize) * mapUnitSize;
+                posInt = new Vector3Int(dx, posInt.y, dz);
+
+                float cursorOffset = (float)mapUnitSize / 2f;
+                Vector3 p1 = new Vector3(posInt.x - cursorOffset, posInt.y, posInt.z - cursorOffset);
+                Vector3 p2 = new Vector3(posInt.x - cursorOffset, posInt.y, posInt.z + cursorOffset);
+                Vector3 p3 = new Vector3(posInt.x + cursorOffset, posInt.y, posInt.z + cursorOffset);
+                Vector3 p4 = new Vector3(posInt.x + cursorOffset, posInt.y, posInt.z - cursorOffset);
+
+                Color handlesColor = Handles.color;
+                int thickness = 2;
+                Handles.color = cursorColor;
+                Handles.DrawLine(p1, p2, thickness);
+                Handles.DrawLine(p2, p3, thickness);
+                Handles.DrawLine(p3, p4, thickness);
+                Handles.DrawLine(p4, p1, thickness);
+                SceneView.RepaintAll();
+                Handles.color = handlesColor;
+            }
+            if (mouseDown)
+            {
+                if (mouseInWorld)
+                {
+                    Vector3Int dicPos = new Vector3Int(dx, 0, dz);
+                    if (e.shift)//刪除方塊
+                    {
+                        GameObject goToBeDeleted;
+                        if (mapDics[selectedLayer].TryGetValue(dicPos, out goToBeDeleted))
+                        {
+                            mapDics[selectedLayer].Remove(dicPos);
+                            DestroyImmediate(goToBeDeleted);
+                        }
+                    }
+                    else//繪製方塊
+                    {
+                        if (mapDics[selectedLayer].ContainsKey(dicPos) && !replaceItem) return;
+
+                        if (autoClearOverlapCube)
+                        {
+                            foreach (var dic in mapDics)
+                            {
+                                if (dic.ContainsKey(dicPos))
+                                {
+                                    GameObject goToBeDeleted;
+                                    if(dic.TryGetValue(dicPos, out goToBeDeleted))
+                                    {
+                                        dic.Remove(dicPos);
+                                        DestroyImmediate(goToBeDeleted);
+                                    }
+                                }
+                            }
+                        }
+
+                        if (mapDics[selectedLayer].ContainsKey(dicPos))
+                        {
+                            GameObject goToBeDeleted;
+                            if (mapDics[selectedLayer].TryGetValue(dicPos, out goToBeDeleted))
+                            {
+                                mapDics[selectedLayer].Remove(dicPos);
+                                DestroyImmediate(goToBeDeleted);
+                            }
+                        }
+
+                        //繪製方塊
+                        GameObject cube = (GameObject)PrefabUtility.InstantiatePrefab(mapItemPrefabs[selectedNum]);
+                        cube.transform.position = posInt;
+                        cube.transform.SetParent(layerObjs[selectedLayer].transform);
+
+                        mapDics[selectedLayer].Add(dicPos, cube);
+                    }
+                }
+            }
         }
         //地圖元件用的函式
         /// <summary>
