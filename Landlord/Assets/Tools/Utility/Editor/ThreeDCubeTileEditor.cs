@@ -7,6 +7,7 @@ using System;
 using RonTools;
 using Codice.Utils;
 using UnityEngine.Tilemaps;
+using System.Collections.ObjectModel;
 
 namespace Ron.Tools
 {
@@ -152,19 +153,29 @@ namespace Ron.Tools
                     {
                         if (!newLayer && !editLayer)//新增和編輯圖層就不顯示按鈕
                         {
-                            if (GUILayout.Button("新增圖層")) { }
-                            if (GUILayout.Button("編輯圖層")) { }
-                            if (GUILayout.Button("刪除圖層")) { }
+                            if (GUILayout.Button("新增圖層"))
+                            {
+                                AddMapLayer();
+                            }
+                            if (GUILayout.Button("編輯圖層"))
+                            {
+                                ModifyMapLayer();
+                            }
+                            if (GUILayout.Button("刪除圖層"))
+                            {
+                                RemoveMapLayer();
+                            }
                         }
                         if (newLayer)
                         {
-
+                            AddMapLayerImplement();
                         }
-                        else//editLayer
+                        else if (editLayer)//editLayer
                         {
-
+                            ModifyMapLayerImplement();
                         }
                     }, () => GUILayout.EndHorizontal());
+                    DisplayLayerList();
                 }, () => GUILayout.EndVertical());
                 //地圖製作區
                 Nested._(() => GUILayout.BeginVertical(), () =>
@@ -185,9 +196,9 @@ namespace Ron.Tools
                     GUILayout.Box("檔案", boxStyle);
                     Nested._(() => GUILayout.BeginHorizontal(), () =>
                     {
-                        if (GUILayout.Button("新地圖")) { }
-                        if (GUILayout.Button("儲存檔案")) { }
-                        if (GUILayout.Button("載入舊檔")) { }
+                        if (GUILayout.Button("新地圖")) { CreateNewMap(); }
+                        if (GUILayout.Button("儲存檔案")) { SaveMapData(); }
+                        if (GUILayout.Button("載入舊檔")) { LoadMapData(); }
                     }, () => GUILayout.EndHorizontal());
 
                 }, () => GUILayout.EndVertical());
@@ -214,8 +225,131 @@ namespace Ron.Tools
         {
 
         }
-        void SaveData(string filename) { }
-        void LoadData(string filename) { }
+        void SaveData(string filename)
+        {
+            TileMapData data = new TileMapData();
+            var r = TileMap;
+            RebuildMapItemData();
+            RebuildMapDic();
+
+            Transform cam = Camera.main.transform;
+            if (cam != null)
+            {
+                data.camPos = cam.position;
+                data.camRot = cam.eulerAngles;
+                data.camFDV = cam.GetComponent<Camera>().fieldOfView;
+            }
+
+            GameObject player = GameObject.FindGameObjectWithTag("Player");
+            if (player != null)
+            {
+                data.playerPos = V3ToV3Int(player.transform.position);
+                data.playerRot = player.transform.eulerAngles;
+            }
+
+            data.resBlocks = mapItemNames.ToArray();
+            data.layerDatas = new TileMapLayer[layerObjs.Count];
+
+            for (int i = 0; i < layerObjs.Count; i++)
+            {
+                data.layerDatas[i].name = layerObjs[i].name;
+                data.layerDatas[i].height = Mathf.RoundToInt(layerObjs[i].transform.position.y);
+                data.layerDatas[i].blocks = new List<Block>();
+
+                Transform[] children = layerObjs[i].GetComponentsInChildren<Transform>();
+
+                foreach (var item in children)
+                {
+                    if (item.parent == layerObjs[i].transform)
+                    {
+                        //取得地板原始的Prefab
+                        var prefab = PrefabUtility.GetCorrespondingObjectFromSource(item.gameObject);
+                        //取得Prefab在硬碟中存放的位置
+                        string assetPath = AssetDatabase.GetAssetPath(prefab);
+                        //找出相同的檔名即為該編號
+                        int index = 0;
+                        for (int j = 0; j < data.resBlocks.Length; j++)
+                        {
+                            if (assetPath.ToLower() == data.resBlocks[j].ToLower())
+                            {
+                                index = j;
+                                break;
+                            }
+
+                        }
+
+                        data.layerDatas[i].blocks.Add(new Block(index, V3ToV3Int(item.position)));
+                    }
+                }
+
+            }
+
+            SaveAndLoad saveAndLoad = new SaveAndLoad(filename);
+            saveAndLoad.SaveJson(data);
+        }
+        void LoadData(string filename)
+        {
+            TileMapData data = new TileMapData();
+            SaveAndLoad saveAndLoad = new SaveAndLoad(filename);
+            data = saveAndLoad.LoadJson<TileMapData>();
+
+            Transform cam = Camera.main.transform;
+            if (cam != null)
+            {
+                cam.position = data.camPos;
+                cam.eulerAngles = data.camRot;
+                Camera.main.GetComponent<Camera>().fieldOfView = data.camFDV;
+            }
+
+            GameObject player = GameObject.FindGameObjectWithTag("Player");
+            if (player != null)
+            {
+                player.transform.position = data.playerPos;
+                player.transform.eulerAngles = data.playerRot;
+            }
+
+            //清空資源列表
+            mapItemPrefabs.Clear();
+            mapItemNames.Clear();
+            mapItemIcons.Clear();
+            selectedNum = 0;
+            CleanLayerContainer();
+            DestroyImmediate(tileMap);
+
+            //讀取資源列表
+            foreach (var item in data.resBlocks)
+            {
+                var go = (GameObject)AssetDatabase.LoadAssetAtPath(item, typeof(GameObject));
+
+                mapItemPrefabs.Add(go);
+                mapItemNames.Add(item);
+                mapItemIcons.Add(AssetPreview.GetAssetPreview(go));
+            }
+
+            SaveMapItemData();
+
+            tileMap = new GameObject();
+            tileMap.name = "TileMap";
+            int dicNum = 0;
+            foreach (var item in data.layerDatas)
+            {
+                GameObject go = new GameObject();
+                go.name = item.name;
+                go.transform.position = new Vector3(0, item.height, 0);
+                go.transform.SetParent(TileMap.transform);
+                AddNewLayer(go);
+                foreach (var b in item.blocks)
+                {
+                    GameObject ob = (GameObject)PrefabUtility.InstantiatePrefab(mapItemPrefabs[b.index]);
+                    ob.transform.position = b.pos;
+                    ob.transform.SetParent(go.transform);
+                    var dicPos = new Vector3Int(b.pos.x, 0, b.pos.z);
+                    mapDics[dicNum].Add(dicPos, ob);
+                }
+                dicNum++;
+            }
+
+        }
         Vector3Int V3ToV3Int(Vector3 val)
         {
             int x = Mathf.RoundToInt(val.x);
@@ -246,6 +380,8 @@ namespace Ron.Tools
         private void OnEnable()
         {
             SceneView.duringSceneGui += this.OnSceneGUI;
+
+            OnFocus();
         }
         private void OnDisable()
         {
@@ -277,7 +413,7 @@ namespace Ron.Tools
             //   若有需要在 SceneView 繪製各種UI功能
             //}
             //Handles.EndGUI();
-            //onPainting = true;  //測試用
+            onPainting = true;  //測試用
             if (!onPainting) return;
             int controlID = GUIUtility.GetControlID(FocusType.Passive);
             Event e = Event.current;
@@ -402,7 +538,7 @@ namespace Ron.Tools
                                 if (dic.ContainsKey(dicPos))
                                 {
                                     GameObject goToBeDeleted;
-                                    if(dic.TryGetValue(dicPos, out goToBeDeleted))
+                                    if (dic.TryGetValue(dicPos, out goToBeDeleted))
                                     {
                                         dic.Remove(dicPos);
                                         DestroyImmediate(goToBeDeleted);
@@ -462,6 +598,8 @@ namespace Ron.Tools
             {
                 AddMapItemToContainer(name);
             }
+
+            Repaint();//全部重繪，以避免有時候縮圖顯示不出來的問題
         }
 
         private void AddMapItemToContainer(string name)
@@ -542,6 +680,150 @@ namespace Ron.Tools
         private void UpdateContentWidth()
         {
             contentWidth = position.width - 20;
+        }
+
+        //圖層用函式
+        void AddMapLayer()
+        {
+            newLayer = true;
+            layerName = "New Layer";
+            layerHeight = 0;
+        }
+        void AddMapLayerImplement()
+        {
+            Nested._(() => GUILayout.BeginVertical(), () =>
+            {
+                Nested._(() => GUILayout.BeginHorizontal(), () =>
+                {
+                    GUILayout.Label("圖層名稱", GUILayout.Width(60));
+                    layerName = EditorGUILayout.TextField(layerName);
+                }, () => GUILayout.EndHorizontal());
+
+                Nested._(() => GUILayout.BeginHorizontal(), () =>
+                {
+                    GUILayout.Label("圖層高度", GUILayout.Width(60));
+                    layerHeight = EditorGUILayout.IntField(layerHeight);
+                    if (GUILayout.Button("-")) layerHeight -= 1;
+                    if (GUILayout.Button("+")) layerHeight += 1;
+                    if (GUILayout.Button("確定"))
+                    {
+                        GameObject go = new GameObject();
+                        go.name = layerName;
+                        go.transform.position = new Vector3(0, layerHeight, 0);
+                        go.transform.SetParent(TileMap.transform);
+                        AddNewLayer(go);
+                        newLayer = false;
+                        layerName = "";
+                    }
+                    if (GUILayout.Button("取消"))
+                    {
+                        newLayer = false;
+                        layerName = "";
+                    }
+
+                }, () => GUILayout.EndHorizontal());
+
+
+            }, () => GUILayout.EndVertical());
+        }
+        void ModifyMapLayer()
+        {
+            editLayer = true;
+            layerName = layerNames[selectedLayer];
+            layerHeight = Mathf.RoundToInt(layerObjs[selectedLayer].transform.position.y);
+        }
+        void ModifyMapLayerImplement()
+        {
+            Nested._(() => GUILayout.BeginVertical(), () =>
+            {
+                Nested._(() => GUILayout.BeginHorizontal(), () =>
+                {
+                    GUILayout.Label("圖層名稱", GUILayout.Width(60));
+                    layerName = EditorGUILayout.TextField(layerName);
+                }, () => GUILayout.EndHorizontal());
+
+                Nested._(() => GUILayout.BeginHorizontal(), () =>
+                {
+                    GUILayout.Label("圖層高度", GUILayout.Width(60));
+                    layerHeight = EditorGUILayout.IntField(layerHeight);
+                    if (GUILayout.Button("-")) layerHeight -= 1;
+                    if (GUILayout.Button("+")) layerHeight += 1;
+                    if (GUILayout.Button("確定"))
+                    {
+                        layerObjs[selectedLayer].name = layerName;
+                        layerObjs[selectedLayer].transform.position = new Vector3(0, layerHeight, 0);
+                        layerNames[selectedLayer] = layerName;
+                        editLayer = false;
+                        layerName = "";
+                    }
+                    if (GUILayout.Button("取消"))
+                    {
+                        editLayer = false;
+                        layerName = "";
+                    }
+                }, () => GUILayout.EndHorizontal());
+
+
+            }, () => GUILayout.EndVertical());
+
+        }
+        void DisplayLayerList()
+        {
+            selectedLayer = GUILayout.SelectionGrid(selectedLayer, layerNames.ToArray(), 1, GUILayout.Width(contentWidth - 20));
+        }
+        void RemoveMapLayer()
+        {
+            if (!EditorUtility.DisplayDialog("刪除圖層", $"確定要刪除圖層「{layerNames[selectedLayer]}」嗎？\n該圖層的資料會全部刪除", "確定", "取消")) return;
+            DestroyImmediate(layerObjs[selectedLayer]);//刪除圖層管理的GameObject
+            layerObjs.Remove(layerObjs[selectedLayer]);
+            layerNames.Remove(layerNames[selectedLayer]);
+            mapDics.Remove(mapDics[selectedLayer]);
+            selectedLayer = 0;
+        }
+
+        void CreateNewMap()
+        {
+            if (!EditorUtility.DisplayDialog("新地圖", "現有地圖資料會被清空，確定要開新地圖嗎？", "確定", "取消"))
+            {
+                return;
+            }
+
+            CleanLayerContainer();
+            DestroyImmediate(tileMap);
+            var t = TileMap;
+            tempFilename = "";
+
+        }
+
+        void SaveMapData()
+        {
+            string defaultPath = tempPath;
+            if (defaultPath == "") defaultPath = Application.dataPath;
+
+            string filename = EditorUtility.SaveFilePanel("儲存檔案", defaultPath, tempFilename, "json");
+
+            if (filename != "")
+            {
+                tempPath = Path.GetDirectoryName(filename);
+                tempFilename = Path.GetFileName(filename);
+                SaveData(filename);
+            }
+        }
+
+        void LoadMapData()
+        {
+            selectedNum = 0;
+            selectedLayer = 0;
+            string defaultPath = tempPath;
+            if (defaultPath == "") defaultPath = Application.dataPath;
+
+            string filename = EditorUtility.OpenFilePanel("載入舊檔", defaultPath, "json");
+            if (filename != "")
+            {
+                tempPath = Path.GetDirectoryName(filename);
+                tempFilename = Path.GetFileName(filename);
+                LoadData(filename);
+            }
         }
     }
 }
