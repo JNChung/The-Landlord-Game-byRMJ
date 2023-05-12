@@ -192,17 +192,6 @@ namespace Ron.Tools
         static int layerHeight = 0;
         static int selectedLayer = 0;
 
-        //地圖繪製區變數
-        bool mouseDown = false;
-        static int mapUnitSize = 1;
-        static Color cursorColor = Color.yellow;
-        static bool showGrid = true;
-        static int gridCount = 19;//格線數量，太多會影響效能
-        static Color gridColor = Color.gray;
-        static bool autoClearOverlapCube = false;
-        static bool replaceItem = true;//false: not draw
-        static List<Dictionary<Vector3Int, GameObject>> mapDics = new List<Dictionary<Vector3Int, GameObject>>();
-        static bool onPainting = false;
 
         //存檔區變數
         static string tempFilename = "";
@@ -352,7 +341,7 @@ namespace Ron.Tools
             }
 
         }
-        Vector3Int V3ToV3Int(Vector3 val)
+        static Vector3Int V3ToV3Int(Vector3 val)
         {
             int x = Mathf.RoundToInt(val.x);
             int y = Mathf.RoundToInt(val.y);
@@ -389,6 +378,20 @@ namespace Ron.Tools
         {
             SceneView.duringSceneGui -= this.OnSceneGUI;
         }
+
+
+        //地圖繪製區變數
+        bool mouseDown = false;
+        static int mapUnitSize = 1;
+        static Color cursorColor = Color.yellow;
+        static bool showGrid = true;
+        static int gridCount = 19;//格線數量，太多會影響效能
+        static Color gridColor = Color.gray;
+        static bool autoClearOverlapCube = false;
+        static bool replaceItem = true;//false: not draw
+        static List<Dictionary<Vector3Int, GameObject>> mapDics = new List<Dictionary<Vector3Int, GameObject>>();
+        static bool onPainting = false;
+        Vector3Int camCenter;
         // SceneView 繪製用函式
         [DrawGizmo(GizmoType.NonSelected)]
         static void RenderGridGizmo(Transform objectTransform, GizmoType gizmoType)
@@ -398,13 +401,20 @@ namespace Ron.Tools
             {
                 int s = (gridCount + 1) / 2;
                 int h = Mathf.RoundToInt(layerObjs[selectedLayer].transform.position.y);
+
+                Transform cam = SceneView.currentDrawingSceneView.camera.transform;
+                Ray cf = new Ray(cam.position, cam.forward);
+                Plane plane = new Plane(Vector3.up, new Vector3(0, h, 0));
+                if (!plane.Raycast(cf, out float enter)) return;
+                Vector3Int center = V3ToV3Int(cf.GetPoint(enter));
+                Debug.Log(center);
                 Gizmos.color = gridColor;
                 float offset = 0.5f * mapUnitSize;
                 for (int i = -s; i < s; i++)
                 {
-                    Gizmos.DrawLine(new Vector3(-s * mapUnitSize + offset, h, i * mapUnitSize + offset),
-                        new Vector3(s * mapUnitSize - offset, h, i * mapUnitSize + offset));
-                    Gizmos.DrawLine(new Vector3(i * mapUnitSize + offset, h, -s * mapUnitSize + offset), new Vector3(i * mapUnitSize + offset, h, s * mapUnitSize - offset));
+                    Gizmos.DrawLine(center + new Vector3(-s * mapUnitSize + offset, -0.5f, i * mapUnitSize + offset), center +
+                        new Vector3(s * mapUnitSize - offset, -0.5f, i * mapUnitSize + offset));
+                    Gizmos.DrawLine(center + new Vector3(i * mapUnitSize + offset, -0.5f, -s * mapUnitSize + offset), center + new Vector3(i * mapUnitSize + offset, -0.5f, s * mapUnitSize - offset));
                 }
             }
         }
@@ -500,10 +510,10 @@ namespace Ron.Tools
                 posInt = new Vector3Int(dx, posInt.y, dz);
 
                 float cursorOffset = (float)mapUnitSize / 2f;
-                Vector3 p1 = new Vector3(posInt.x - cursorOffset, posInt.y, posInt.z - cursorOffset);
-                Vector3 p2 = new Vector3(posInt.x - cursorOffset, posInt.y, posInt.z + cursorOffset);
-                Vector3 p3 = new Vector3(posInt.x + cursorOffset, posInt.y, posInt.z + cursorOffset);
-                Vector3 p4 = new Vector3(posInt.x + cursorOffset, posInt.y, posInt.z - cursorOffset);
+                Vector3 p1 = new Vector3(posInt.x - cursorOffset, posInt.y-0.5f, posInt.z - cursorOffset);
+                Vector3 p2 = new Vector3(posInt.x - cursorOffset, posInt.y-0.5f, posInt.z + cursorOffset);
+                Vector3 p3 = new Vector3(posInt.x + cursorOffset, posInt.y-0.5f, posInt.z + cursorOffset);
+                Vector3 p4 = new Vector3(posInt.x + cursorOffset, posInt.y-0.5f, posInt.z - cursorOffset);
 
                 Color handlesColor = Handles.color;
                 int thickness = 2;
