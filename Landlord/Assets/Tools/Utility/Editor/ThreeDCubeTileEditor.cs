@@ -39,11 +39,10 @@ namespace Ron.Tools
                         {
                             AddNewLayer(item.gameObject);
                         }
-
-                        if (layerObjs.Count == 0)
-                        {
-                            AddDefaultLayer();
-                        }
+                    }
+                    if (layerObjs.Count == 0)
+                    {
+                        AddDefaultLayer();
                     }
                     return tileMap;
                 }
@@ -58,65 +57,6 @@ namespace Ron.Tools
                 }
             }
         }
-
-        private void AddDefaultLayer()
-        {
-            GameObject go = new GameObject();
-            go.name = "Default";
-            go.transform.SetParent(TileMap.transform);
-            AddNewLayer(go);
-            selectedLayer = 0;
-        }
-
-        private void AddNewLayer(GameObject go)
-        {
-            layerObjs.Add(go);
-            layerNames.Add(go.name);
-            mapDics.Add(new Dictionary<Vector3Int, GameObject>());//建立圖層時，要順便建立該圖層的字典容器。
-        }
-
-        private void CleanLayerContainer()
-        {
-            layerObjs.Clear();
-            layerNames.Clear();
-            mapDics.Clear();
-        }
-
-        Vector2 scrollPos;
-        float contentWidth;
-
-        //地圖方塊區變數
-        string filepath = "Tools/Utility/Editor/Datas/MapItems.json";
-        static List<GameObject> mapItemPrefabs = new List<GameObject>();
-        static List<string> mapItemNames = new List<string>();
-        static List<Texture> mapItemIcons = new List<Texture>();
-        static int selectedNum = 0;
-        static float iconSize = 80;//縮圖尺寸
-        private string tempPath = "";
-
-        //圖層變數
-        static List<GameObject> layerObjs = new List<GameObject>();
-        static List<string> layerNames = new List<string>();
-        static bool newLayer = false;
-        static bool editLayer = false;
-        static string layerName = "";
-        static int layerHeight = 0;
-        static int selectedLayer = 0;
-
-        //地圖繪製區變數
-        bool mouseDown = false;
-        static int mapUnitSize = 1;
-        static Color cursorColor = Color.yellow;
-        static bool showGrid = true;
-        static int gridCount = 9;//格線數量，太多會影響效能
-        static Color gridColor = Color.gray;
-        static bool autoClearOverlapCube = false;
-        static bool replaceItem = true;//false: not draw
-        static List<Dictionary<Vector3Int, GameObject>> mapDics = new List<Dictionary<Vector3Int, GameObject>>();
-        static bool onPainting = false;
-
-        //存檔區變數
-        static string tempFilename = "";
         private void OnGUI()
         {
             Input.imeCompositionMode = IMECompositionMode.On;//讓輸入單元支援中文。
@@ -125,7 +65,10 @@ namespace Ron.Tools
             GUIStyle boxStyle = new GUIStyle(GUI.skin.box);//box要用的風格檔。
             boxStyle.normal.textColor = Color.white;
             boxStyle.fixedWidth = contentWidth;
-            GUILayout.Label("我是中文編輯器");
+            if (GUILayout.Button("繪製圖層"))
+            {
+                onPainting = !onPainting;
+            }
             scrollPos = Nested._(() => EditorGUILayout.BeginScrollView(scrollPos, false, true, GUILayout.Height(contentWidth)), () =>
             {
                 //方塊管理區
@@ -204,6 +147,65 @@ namespace Ron.Tools
                 }, () => GUILayout.EndVertical());
             }, () => EditorGUILayout.EndScrollView());
         }
+
+        private void AddDefaultLayer()
+        {
+            GameObject go = new GameObject();
+            go.name = "Default";
+            go.transform.SetParent(TileMap.transform);
+            AddNewLayer(go);
+            selectedLayer = 0;
+        }
+
+        private void AddNewLayer(GameObject go)
+        {
+            layerObjs.Add(go);
+            layerNames.Add(go.name);
+            mapDics.Add(new Dictionary<Vector3Int, GameObject>());//建立圖層時，要順便建立該圖層的字典容器。
+        }
+
+        private void CleanLayerContainer()
+        {
+            layerObjs.Clear();
+            layerNames.Clear();
+            mapDics.Clear();
+        }
+
+        Vector2 scrollPos;
+        float contentWidth;
+
+        //地圖方塊區變數
+        string filepath = "Tools/Utility/Editor/Datas/MapItems.json";
+        static List<GameObject> mapItemPrefabs = new List<GameObject>();
+        static List<string> mapItemNames = new List<string>();
+        static List<Texture> mapItemIcons = new List<Texture>();
+        static int selectedNum = 0;
+        static float iconSize = 80;//縮圖尺寸
+        private string tempPath = "";
+
+        //圖層變數
+        static List<GameObject> layerObjs = new List<GameObject>();
+        static List<string> layerNames = new List<string>();
+        static bool newLayer = false;
+        static bool editLayer = false;
+        static string layerName = "";
+        static int layerHeight = 0;
+        static int selectedLayer = 0;
+
+        //地圖繪製區變數
+        bool mouseDown = false;
+        static int mapUnitSize = 1;
+        static Color cursorColor = Color.yellow;
+        static bool showGrid = true;
+        static int gridCount = 19;//格線數量，太多會影響效能
+        static Color gridColor = Color.gray;
+        static bool autoClearOverlapCube = false;
+        static bool replaceItem = true;//false: not draw
+        static List<Dictionary<Vector3Int, GameObject>> mapDics = new List<Dictionary<Vector3Int, GameObject>>();
+        static bool onPainting = false;
+
+        //存檔區變數
+        static string tempFilename = "";
         bool MouseToWorldPosition(Vector3 mousePosition, int layerHeight, out Vector3 MouseWorldPosition)
         {
             Vector3Int h = new Vector3Int(0, layerHeight, 0);
@@ -413,7 +415,7 @@ namespace Ron.Tools
             //   若有需要在 SceneView 繪製各種UI功能
             //}
             //Handles.EndGUI();
-            onPainting = true;  //測試用
+            //onPainting = true;  //測試用
             if (!onPainting) return;
             int controlID = GUIUtility.GetControlID(FocusType.Passive);
             Event e = Event.current;
