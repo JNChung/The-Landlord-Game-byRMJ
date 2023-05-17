@@ -29,10 +29,13 @@ namespace Ron.Tools
             get
             {
                 if (tileMap != null) return tileMap;
+
+                Debug.LogWarning("tileMap物件消失，嘗試重建中");
                 CleanLayerContainer();
                 tileMap = GameObject.Find("TileMap");
                 if (tileMap != null)
                 {
+                    Debug.LogWarning("偵測到既存 tileMap，重建圖層");
                     Transform[] trs = tileMap.GetComponentsInChildren<Transform>();
                     foreach (var item in trs)
                     {
@@ -41,14 +44,11 @@ namespace Ron.Tools
                             AddNewLayer(item.gameObject);
                         }
                     }
-                    if (layerObjs.Count == 0)
-                    {
-                        AddDefaultLayer();
-                    }
                     return tileMap;
                 }
                 else
                 {
+                    Debug.LogWarning("找不到 tileMap，重建主物件");
                     tileMap = new GameObject();
                     tileMap.name = "TileMap";
 
@@ -60,32 +60,104 @@ namespace Ron.Tools
         }
         private void OnGUI()
         {
+            //初始化
             ChineseSupport();
-            //            Texture2D result = new Texture2D(1, 1);//加入這一行才能即時顯示格線。
+            //Texture2D result = new Texture2D(1, 1);//加入這一行才能即時顯示格線。
             UpdateContentWidth();
             GUIStyle boxStyle = new GUIStyle(GUI.skin.box);//box要用的風格檔。
             boxStyle.normal.textColor = Color.white;
             boxStyle.fixedWidth = contentWidth;
-            Nested._(() => EditorGUILayout.BeginVertical(), () => {
-                onPainting = GUILayout.Toggle(onPainting, "繪製地塊");
-                onDeleting = GUILayout.Toggle(onDeleting, "刪除地塊");
-            }, () => GUILayout.EndVertical());
+
+            //畫上UI
             scrollPos = Nested._(() => EditorGUILayout.BeginScrollView(scrollPos, false, true, GUILayout.Height(contentWidth)), () =>
             {
-                //方塊管理區
+                GUILayout.Box("地圖元件", boxStyle);
                 ShowMapComponentManageUI();
-
-                //顯示地圖元件列表
                 DisplayMapComponents();
+                MakeGap();
 
-                //圖層管理區
-                Nested._(() => GUILayout.BeginVertical(GUILayout.Width(contentWidth)), () =>
+                GUILayout.Box("圖層", boxStyle);
+                ShowLayerManageUI();
+                MakeGap();
+
+                //地圖製作區
+                GUILayout.Box("地圖製作", boxStyle);
+                Nested._(() => GUILayout.BeginVertical(), () =>
                 {
-                    GUILayout.Space(10);
-                    GUILayout.Box("圖層", boxStyle);
+                    //設定單位尺寸
+                    //設定格線尺寸
                     Nested._(() => GUILayout.BeginHorizontal(), () =>
                     {
-                        if (!newLayer && !editLayer)//新增和編輯圖層就不顯示按鈕
+                        autoClearOverlapCube = GUILayout.Toggle(autoClearOverlapCube, "自動清除不同圖層重疊方塊");
+                        replaceItem = GUILayout.Toggle(replaceItem, "自動取代");
+                    }, () => GUILayout.EndHorizontal());
+                    if (onPainting)
+                    {
+                        GUIStyle btnStyle = new GUIStyle(GUI.skin.button);
+                        btnStyle.normal.textColor = Color.yellow;
+                        btnStyle.normal.background = MakeTex(10, 10, Color.blue);
+                        if (GUILayout.Button("繪圖中...", btnStyle))
+                        {
+                            onPainting = false;
+                        }
+                    }
+                    else
+                    {
+                        GUIStyle btnStyle = new GUIStyle(GUI.skin.button);
+                        btnStyle.normal.textColor = Color.white;
+                        btnStyle.normal.background = GUI.skin.button.normal.background;
+                        if (GUILayout.Button("開始繪圖", btnStyle))
+                        {
+                            onPainting = true;
+                        }
+                    }
+
+                    MakeGap();
+                    GUILayout.Box("檔案", boxStyle);
+                    Nested._(() => GUILayout.BeginHorizontal(), () =>
+                    {
+                        if (GUILayout.Button("新地圖")) { CreateNewMap(); }
+                        if (GUILayout.Button("儲存檔案")) { SaveMapData(); }
+                        if (GUILayout.Button("載入舊檔")) { LoadMapData(); }
+                    }, () => GUILayout.EndHorizontal());
+
+                }, () => GUILayout.EndVertical());
+            }, () => EditorGUILayout.EndScrollView());
+
+
+            //void ShowOperationManageUI()
+            //{
+            //    Nested._(() => EditorGUILayout.BeginVertical(GUILayout.Width(contentWidth)), () =>
+            //    {
+            //        Nested._(() => GUILayout.BeginHorizontal(), () =>
+            //        {
+            //            onPainting = GUILayout.Toggle(onPainting, "繪製地塊");
+            //            onDeleting = GUILayout.Toggle(onDeleting, "刪除地塊");
+            //        }, () => GUILayout.EndHorizontal());
+            //    }, () => GUILayout.EndVertical());
+            //}`
+
+            void ShowMapComponentManageUI()
+            {
+                Nested._(() => GUILayout.BeginVertical(GUILayout.Width(contentWidth)), () =>
+                {
+                    Nested._(() => GUILayout.BeginHorizontal(), () =>
+                    {
+                        if (GUILayout.Button("加入地圖元件")) { AddMapItem(); }
+                        if (GUILayout.Button("刪除地圖元件")) { RemoveMapItem(); }
+                        if (GUILayout.Button("刪除全圖元件")) { RemoveAllMapItem(); }
+                        //顯示尺寸用的滑桿
+                        iconSize = GUILayout.HorizontalSlider(iconSize, 40, 120, GUILayout.Width(60));
+                    }, () => GUILayout.EndHorizontal());
+                }, () => GUILayout.EndVertical());
+            }
+            void ShowLayerManageUI()
+            {
+                Nested._(() => GUILayout.BeginVertical(GUILayout.Width(contentWidth)), () =>
+                {
+                    Nested._(() => GUILayout.BeginHorizontal(), () =>
+                    {
+                        if (!newLayer && !editLayer)//彈窗效果：不是新增和編輯圖層就不顯示按鈕
                         {
                             if (GUILayout.Button("新增圖層"))
                             {
@@ -111,57 +183,19 @@ namespace Ron.Tools
                     }, () => GUILayout.EndHorizontal());
                     DisplayLayerList();
                 }, () => GUILayout.EndVertical());
-
-                //地圖製作區
-                Nested._(() => GUILayout.BeginVertical(), () =>
-                {
-                    GUILayout.Space(10);
-                    GUILayout.Box("地圖製作", boxStyle);
-                    //設定單位尺寸
-                    //設定格線尺寸
-                    Nested._(() => GUILayout.BeginHorizontal(), () =>
-                    {
-                        autoClearOverlapCube = GUILayout.Toggle(autoClearOverlapCube, "自動清除不同圖層重疊方塊");
-                        replaceItem = GUILayout.Toggle(replaceItem, "自動取代");
-                    }, () => GUILayout.EndHorizontal());
-                    if (onPainting) { }
-                    else { }
-
-                    GUILayout.Space(10);
-                    GUILayout.Box("檔案", boxStyle);
-                    Nested._(() => GUILayout.BeginHorizontal(), () =>
-                    {
-                        if (GUILayout.Button("新地圖")) { CreateNewMap(); }
-                        if (GUILayout.Button("儲存檔案")) { SaveMapData(); }
-                        if (GUILayout.Button("載入舊檔")) { LoadMapData(); }
-                    }, () => GUILayout.EndHorizontal());
-
-                }, () => GUILayout.EndVertical());
-            }, () => EditorGUILayout.EndScrollView());
-
-            void ShowMapComponentManageUI()
+            }
+            void MakeGap()
             {
-                Nested._(() => GUILayout.BeginVertical(GUILayout.Width(contentWidth)), () =>
-                {
-                    GUILayout.Space(10);//加上一排空格
-                    GUILayout.Box("地圖元件", boxStyle);
-                    Nested._(() => GUILayout.BeginHorizontal(), () =>
-                    {
-                        if (GUILayout.Button("加入地圖元件")) { AddMapItem(); }
-                        if (GUILayout.Button("刪除地圖元件")) { RemoveMapItem(); }
-                        if (GUILayout.Button("刪除全圖元件")) { RemoveAllMapItem(); }
-                        //顯示尺寸用的滑桿
-                        iconSize = GUILayout.HorizontalSlider(iconSize, 40, 120, GUILayout.Width(60));
-                    }, () => GUILayout.EndHorizontal());
-                }, () => GUILayout.EndVertical());
+                GUILayout.Space(20);
+            }
+
+            void ChineseSupport()
+            {
+                Input.imeCompositionMode = IMECompositionMode.On;//讓輸入單元支援中文。
             }
         }
 
 
-        private void ChineseSupport()
-        {
-            Input.imeCompositionMode = IMECompositionMode.On;//讓輸入單元支援中文。
-        }
 
         private void AddDefaultLayer()
         {
@@ -430,7 +464,6 @@ namespace Ron.Tools
         static bool replaceItem = true;//false: not draw
         static List<Dictionary<Vector3Int, GameObject>> mapDics = new List<Dictionary<Vector3Int, GameObject>>();
         static bool onPainting = false;
-        static bool onDeleting = false;
         Vector3Int camCenter;
         // SceneView 繪製用函式
         [DrawGizmo(GizmoType.NonSelected)]
