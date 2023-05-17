@@ -1,0 +1,3 @@
+[submodule "Landlord/Assets/Scripts/UnityLib"]
+	path = Landlord/Assets/Scripts/UnityLib
+	url = https://github.com/MSIT12806/UnityLib.git

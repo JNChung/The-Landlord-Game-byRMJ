@@ -8,6 +8,7 @@ using RonTools;
 using Codice.Utils;
 using UnityEngine.Tilemaps;
 using System.Collections.ObjectModel;
+using System.Linq;
 
 namespace Ron.Tools
 {
@@ -59,34 +60,24 @@ namespace Ron.Tools
         }
         private void OnGUI()
         {
-            Input.imeCompositionMode = IMECompositionMode.On;//讓輸入單元支援中文。
-            Texture2D result = new Texture2D(1, 1);//加入這一行才能即時顯示格線。
+            ChineseSupport();
+            //            Texture2D result = new Texture2D(1, 1);//加入這一行才能即時顯示格線。
             UpdateContentWidth();
             GUIStyle boxStyle = new GUIStyle(GUI.skin.box);//box要用的風格檔。
             boxStyle.normal.textColor = Color.white;
             boxStyle.fixedWidth = contentWidth;
-            if (GUILayout.Button("繪製圖層"))
-            {
-                onPainting = !onPainting;
-            }
+            Nested._(() => EditorGUILayout.BeginVertical(), () => {
+                onPainting = GUILayout.Toggle(onPainting, "繪製地塊");
+                onDeleting = GUILayout.Toggle(onDeleting, "刪除地塊");
+            }, () => GUILayout.EndVertical());
             scrollPos = Nested._(() => EditorGUILayout.BeginScrollView(scrollPos, false, true, GUILayout.Height(contentWidth)), () =>
             {
                 //方塊管理區
-                Nested._(() => GUILayout.BeginVertical(GUILayout.Width(contentWidth)), () =>
-                {
-                    GUILayout.Space(10);//加上一排空格
-                    GUILayout.Box("地圖元件", boxStyle);
-                    Nested._(() => GUILayout.BeginHorizontal(), () =>
-                    {
-                        if (GUILayout.Button("加入地圖元件")) { AddMapItem(); }
-                        if (GUILayout.Button("刪除地圖元件")) { RemoveMapItem(); }
-                        if (GUILayout.Button("刪除全圖元件")) { RemoveAllMapItem(); }
-                        //顯示尺寸用的滑桿
-                        iconSize = GUILayout.HorizontalSlider(iconSize, 40, 120, GUILayout.Width(60));
-                    }, () => GUILayout.EndHorizontal());
-                }, () => GUILayout.EndVertical());
+                ShowMapComponentManageUI();
+
                 //顯示地圖元件列表
-                DisplayMapItems();
+                DisplayMapComponents();
+
                 //圖層管理區
                 Nested._(() => GUILayout.BeginVertical(GUILayout.Width(contentWidth)), () =>
                 {
@@ -120,6 +111,7 @@ namespace Ron.Tools
                     }, () => GUILayout.EndHorizontal());
                     DisplayLayerList();
                 }, () => GUILayout.EndVertical());
+
                 //地圖製作區
                 Nested._(() => GUILayout.BeginVertical(), () =>
                 {
@@ -146,6 +138,29 @@ namespace Ron.Tools
 
                 }, () => GUILayout.EndVertical());
             }, () => EditorGUILayout.EndScrollView());
+
+            void ShowMapComponentManageUI()
+            {
+                Nested._(() => GUILayout.BeginVertical(GUILayout.Width(contentWidth)), () =>
+                {
+                    GUILayout.Space(10);//加上一排空格
+                    GUILayout.Box("地圖元件", boxStyle);
+                    Nested._(() => GUILayout.BeginHorizontal(), () =>
+                    {
+                        if (GUILayout.Button("加入地圖元件")) { AddMapItem(); }
+                        if (GUILayout.Button("刪除地圖元件")) { RemoveMapItem(); }
+                        if (GUILayout.Button("刪除全圖元件")) { RemoveAllMapItem(); }
+                        //顯示尺寸用的滑桿
+                        iconSize = GUILayout.HorizontalSlider(iconSize, 40, 120, GUILayout.Width(60));
+                    }, () => GUILayout.EndHorizontal());
+                }, () => GUILayout.EndVertical());
+            }
+        }
+
+
+        private void ChineseSupport()
+        {
+            Input.imeCompositionMode = IMECompositionMode.On;//讓輸入單元支援中文。
         }
 
         private void AddDefaultLayer()
@@ -214,7 +229,31 @@ namespace Ron.Tools
         }
         void RebuildMapDic()
         {
+            if (tileMap == null)
+            {
+                Debug.LogWarning("重建字典失敗，物件不存在");
+                return;
+            }
 
+            for (int i = 0; i < layerName.Count(); i++)
+            {
+                mapDics[i].Clear();
+                Transform[] children = layerObjs[i].GetComponentsInChildren<Transform>();
+
+                foreach (var item in children)
+                {
+                    if (item.parent == layerObjs[i].transform)
+                    {
+                        Vector3Int posInt = V3ToV3Int(item.transform.position);
+                        Vector3Int dicKey = new Vector3Int(posInt.x, 0, posInt.y);
+                        item.transform.position = posInt;//對齊方塊
+                        if (!mapDics[i].ContainsKey(dicKey))
+                        {
+                            mapDics[i].Add(dicKey, item.gameObject);
+                        }
+                    }
+                }
+            }
         }
         void SaveData(string filename)
         {
@@ -391,6 +430,7 @@ namespace Ron.Tools
         static bool replaceItem = true;//false: not draw
         static List<Dictionary<Vector3Int, GameObject>> mapDics = new List<Dictionary<Vector3Int, GameObject>>();
         static bool onPainting = false;
+        static bool onDeleting = false;
         Vector3Int camCenter;
         // SceneView 繪製用函式
         [DrawGizmo(GizmoType.NonSelected)]
@@ -407,7 +447,6 @@ namespace Ron.Tools
                 Plane plane = new Plane(Vector3.up, new Vector3(0, h, 0));
                 if (!plane.Raycast(cf, out float enter)) return;
                 Vector3Int center = V3ToV3Int(cf.GetPoint(enter));
-                Debug.Log(center);
                 Gizmos.color = gridColor;
                 float offset = 0.5f * mapUnitSize;
                 for (int i = -s; i < s; i++)
@@ -418,6 +457,7 @@ namespace Ron.Tools
                 }
             }
         }
+
         void OnSceneGUI(SceneView sceneView)//繪製各種UI物件
         {
             //Handles.BeginGUI();
@@ -510,10 +550,10 @@ namespace Ron.Tools
                 posInt = new Vector3Int(dx, posInt.y, dz);
 
                 float cursorOffset = (float)mapUnitSize / 2f;
-                Vector3 p1 = new Vector3(posInt.x - cursorOffset, posInt.y-0.5f, posInt.z - cursorOffset);
-                Vector3 p2 = new Vector3(posInt.x - cursorOffset, posInt.y-0.5f, posInt.z + cursorOffset);
-                Vector3 p3 = new Vector3(posInt.x + cursorOffset, posInt.y-0.5f, posInt.z + cursorOffset);
-                Vector3 p4 = new Vector3(posInt.x + cursorOffset, posInt.y-0.5f, posInt.z - cursorOffset);
+                Vector3 p1 = new Vector3(posInt.x - cursorOffset, posInt.y - 0.5f, posInt.z - cursorOffset);
+                Vector3 p2 = new Vector3(posInt.x - cursorOffset, posInt.y - 0.5f, posInt.z + cursorOffset);
+                Vector3 p3 = new Vector3(posInt.x + cursorOffset, posInt.y - 0.5f, posInt.z + cursorOffset);
+                Vector3 p4 = new Vector3(posInt.x + cursorOffset, posInt.y - 0.5f, posInt.z - cursorOffset);
 
                 Color handlesColor = Handles.color;
                 int thickness = 2;
@@ -579,6 +619,8 @@ namespace Ron.Tools
                 }
             }
         }
+
+
         //地圖元件用的函式
         /// <summary>
         /// 存檔用資料
@@ -668,7 +710,7 @@ namespace Ron.Tools
 
         }
 
-        void DisplayMapItems()
+        void DisplayMapComponents()
         {
             if (mapItemNames.Count > 0)
             {
