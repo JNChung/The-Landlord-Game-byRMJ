@@ -5,23 +5,179 @@ using System.IO;
 using UnityEditor;
 using System;
 using RonTools;
+using Ron.Base.Extension;
 using Codice.Utils;
 using UnityEngine.Tilemaps;
 using System.Collections.ObjectModel;
 using System.Linq;
+using static UnityEditor.PlayerSettings;
+using UnityEditor.SceneManagement;
 
 namespace Ron.Tools
 {
-    public class ThreeDCubeTileMenu
-    {
-        [MenuItem("RonTool/3D Tile Map Editor 2022", false, 0)]
-        static void OpenControlPanel()
-        {
-            EditorWindow.GetWindow(typeof(ThreeDCubeTileEditor));
-        }
-    }
     public class ThreeDCubeTileEditor : EditorWindow
     {
+        void OnSceneGUI(SceneView sceneView)//繪製各種UI物件
+        {
+            //Handles.BeginGUI();
+            //{
+            //   若有需要在 SceneView 繪製各種UI功能
+            //}
+            //Handles.EndGUI();
+            //onPainting = true;  //測試用
+            if (onPainting == false) return;
+            int controlID = GUIUtility.GetControlID(FocusType.Passive);
+            Event e = Event.current;
+            if (e.alt) return;//alt被按下表示使用者要旋轉畫面，不要進行繪製。
+            switch (e.GetTypeForControl(controlID))
+            {
+                case EventType.MouseDown://開始繪製
+                    if (e.button == 0)
+                    {
+                        GUIUtility.hotControl = controlID;
+                        mouseDown = true;
+                        Event.current.Use();
+                    }
+                    break;
+                case EventType.MouseUp://停止繪製
+                    if (e.button != 0) break;
+                    GUIUtility.hotControl = 0;
+                    mouseDown = false;
+                    Event.current.Use();
+                    break;
+                case EventType.MouseMove:
+                    break;
+                case EventType.MouseDrag:
+                    break;
+                case EventType.KeyDown:
+                    break;
+                case EventType.KeyUp:
+                    break;
+                case EventType.ScrollWheel:
+                    break;
+                case EventType.Repaint:
+                    break;
+                case EventType.Layout:
+                    break;
+                case EventType.DragUpdated:
+                    break;
+                case EventType.DragPerform:
+                    break;
+                case EventType.DragExited:
+                    break;
+                case EventType.Ignore:
+                    break;
+                case EventType.Used:
+                    break;
+                case EventType.ValidateCommand:
+                    break;
+                case EventType.ExecuteCommand:
+                    break;
+                case EventType.ContextClick:
+                    break;
+                case EventType.MouseEnterWindow:
+                    break;
+                case EventType.MouseLeaveWindow:
+                    break;
+                case EventType.TouchDown:
+                    break;
+                case EventType.TouchUp:
+                    break;
+                case EventType.TouchMove:
+                    break;
+                case EventType.TouchEnter:
+                    break;
+                case EventType.TouchLeave:
+                    break;
+                case EventType.TouchStationary:
+                    break;
+                default:
+                    break;
+            }
+            var pos = Vector3.zero;
+            Vector3Int posInt = Vector3Int.zero;
+            bool mouseInWorld = MouseToWorldPosition(e.mousePosition, Mathf.RoundToInt(layerObjs[selectedLayer].transform.position.y), out pos);
+
+            if (mouseInWorld)
+            {
+                posInt = V3ToV3Int(pos);
+                PaintGridCursor(posInt);
+            }
+            if (mouseDown)
+            {
+                if (mouseInWorld)
+                {
+                    Vector3Int key = posInt.WithY();
+                    if (e.shift)//刪除方塊
+                    {
+                        DeleteTile(key);
+                    }
+                    else//繪製方塊
+                    {
+                        if (autoClearOverlapCube)
+                        {
+                            foreach (var dic in mapDics)
+                            {
+                                DeleteTile(key, dic);
+                            }
+                        }
+
+                        if (mapDics[selectedLayer].ContainsKey(key) && replaceItem)
+                        {
+                            DeleteTile(key);
+                        }
+
+                        //繪製方塊
+                        GameObject cube = (GameObject)PrefabUtility.InstantiatePrefab(mapItemPrefabs[selectedNum]);
+                        cube.transform.position = posInt;
+                        cube.transform.SetParent(layerObjs[selectedLayer].transform);
+                        mapDics[selectedLayer].Add(key, cube);
+                    }
+                }
+            }
+        }
+        #region OnSceneGUI 專用
+        void DeleteTile(Vector3Int key)
+        {
+            GameObject goToBeDeleted;
+            if (mapDics[selectedLayer].TryGetValue(key, out goToBeDeleted))
+            {
+                mapDics[selectedLayer].Remove(key);
+                DestroyImmediate(goToBeDeleted);
+            }
+        }
+        void DeleteTile(Vector3Int key, Dictionary<Vector3Int, GameObject> dic)
+        {
+            GameObject goToBeDeleted;
+            if (dic.TryGetValue(key, out goToBeDeleted))
+            {
+                dic.Remove(key);
+                DestroyImmediate(goToBeDeleted);
+            }
+        }
+
+        private void PaintGridCursor(Vector3Int posInt)
+        {
+            posInt = new Vector3Int((posInt.x / mapUnitSize) * mapUnitSize, posInt.y, (posInt.z / mapUnitSize) * mapUnitSize);//貼齊格線小技巧
+
+            float cursorOffset = (float)mapUnitSize / 2f;
+            Vector3 p1 = new Vector3(posInt.x - cursorOffset, posInt.y - 0.5f, posInt.z - cursorOffset);
+            Vector3 p2 = new Vector3(posInt.x - cursorOffset, posInt.y - 0.5f, posInt.z + cursorOffset);
+            Vector3 p3 = new Vector3(posInt.x + cursorOffset, posInt.y - 0.5f, posInt.z + cursorOffset);
+            Vector3 p4 = new Vector3(posInt.x + cursorOffset, posInt.y - 0.5f, posInt.z - cursorOffset);
+
+            Color handlesColor = Handles.color;
+            int thickness = 2;
+            Handles.color = cursorColor;
+            Handles.DrawLine(p1, p2, thickness);
+            Handles.DrawLine(p2, p3, thickness);
+            Handles.DrawLine(p3, p4, thickness);
+            Handles.DrawLine(p4, p1, thickness);
+            SceneView.RepaintAll();
+            Handles.color = handlesColor;
+        }
+        #endregion
+
         static GameObject tileMap;
         GameObject TileMap
         {
@@ -68,8 +224,7 @@ namespace Ron.Tools
             boxStyle.normal.textColor = Color.white;
             boxStyle.fixedWidth = contentWidth;
 
-            //畫上UI
-            scrollPos = Nested._(() => EditorGUILayout.BeginScrollView(scrollPos, false, true, GUILayout.Height(contentWidth)), () =>
+            scrollPos = Nested._(() => EditorGUILayout.BeginScrollView(scrollPos, false, true, GUILayout.Height(500)), () =>
             {
                 GUILayout.Box("地圖元件", boxStyle);
                 ShowMapComponentManageUI();
@@ -80,62 +235,14 @@ namespace Ron.Tools
                 ShowLayerManageUI();
                 MakeGap();
 
-                //地圖製作區
                 GUILayout.Box("地圖製作", boxStyle);
-                Nested._(() => GUILayout.BeginVertical(), () =>
-                {
-                    //設定單位尺寸
-                    //設定格線尺寸
-                    Nested._(() => GUILayout.BeginHorizontal(), () =>
-                    {
-                        autoClearOverlapCube = GUILayout.Toggle(autoClearOverlapCube, "自動清除不同圖層重疊方塊");
-                        replaceItem = GUILayout.Toggle(replaceItem, "自動取代");
-                    }, () => GUILayout.EndHorizontal());
-                    if (onPainting)
-                    {
-                        GUIStyle btnStyle = new GUIStyle(GUI.skin.button);
-                        btnStyle.normal.textColor = Color.yellow;
-                        btnStyle.normal.background = MakeTex(10, 10, Color.blue);
-                        if (GUILayout.Button("繪圖中...", btnStyle))
-                        {
-                            onPainting = false;
-                        }
-                    }
-                    else
-                    {
-                        GUIStyle btnStyle = new GUIStyle(GUI.skin.button);
-                        btnStyle.normal.textColor = Color.white;
-                        btnStyle.normal.background = GUI.skin.button.normal.background;
-                        if (GUILayout.Button("開始繪圖", btnStyle))
-                        {
-                            onPainting = true;
-                        }
-                    }
+                ShowOperateUI();
+                MakeGap();
 
-                    MakeGap();
-                    GUILayout.Box("檔案", boxStyle);
-                    Nested._(() => GUILayout.BeginHorizontal(), () =>
-                    {
-                        if (GUILayout.Button("新地圖")) { CreateNewMap(); }
-                        if (GUILayout.Button("儲存檔案")) { SaveMapData(); }
-                        if (GUILayout.Button("載入舊檔")) { LoadMapData(); }
-                    }, () => GUILayout.EndHorizontal());
+                GUILayout.Box("檔案", boxStyle);
+                ShowIOManageUI();
 
-                }, () => GUILayout.EndVertical());
             }, () => EditorGUILayout.EndScrollView());
-
-
-            //void ShowOperationManageUI()
-            //{
-            //    Nested._(() => EditorGUILayout.BeginVertical(GUILayout.Width(contentWidth)), () =>
-            //    {
-            //        Nested._(() => GUILayout.BeginHorizontal(), () =>
-            //        {
-            //            onPainting = GUILayout.Toggle(onPainting, "繪製地塊");
-            //            onDeleting = GUILayout.Toggle(onDeleting, "刪除地塊");
-            //        }, () => GUILayout.EndHorizontal());
-            //    }, () => GUILayout.EndVertical());
-            //}`
 
             void ShowMapComponentManageUI()
             {
@@ -184,11 +291,64 @@ namespace Ron.Tools
                     DisplayLayerList();
                 }, () => GUILayout.EndVertical());
             }
+            void ShowOperateUI()
+            {
+                Nested._(() => GUILayout.BeginVertical(GUILayout.Width(contentWidth)), () =>
+                {
+                    //可實作設定單位尺寸
+                    //可實作設定格線尺寸
+                    Nested._(() => GUILayout.BeginHorizontal(), () =>
+                    {
+                        autoClearOverlapCube = GUILayout.Toggle(autoClearOverlapCube, "自動清除不同圖層重疊方塊");
+                        replaceItem = GUILayout.Toggle(replaceItem, "自動取代");
+                    }, () => GUILayout.EndHorizontal());
+                    if (onPainting)
+                    {
+                        ShowActivatedOnDrawButton();
+                    }
+                    else
+                    {
+                        ShowStartPaintOnDrawButton();
+                    }
+                }, () => GUILayout.EndVertical());
+            }
+            void ShowActivatedOnDrawButton()
+            {
+                GUIStyle btnStyle = new GUIStyle(GUI.skin.button);
+                btnStyle.normal.textColor = Color.yellow;
+                btnStyle.normal.background = MakeTex(10, 10, Color.blue);
+                if (GUILayout.Button("繪圖中...", btnStyle))
+                {
+                    onPainting = false;
+                }
+            }
+            void ShowStartPaintOnDrawButton()
+            {
+                GUIStyle btnStyle = new GUIStyle(GUI.skin.button);
+                btnStyle.normal.textColor = Color.white;
+                btnStyle.normal.background = GUI.skin.button.normal.background;
+                if (GUILayout.Button("開始繪圖", btnStyle))
+                {
+                    onPainting = true;
+                }
+            }
+
+            void ShowIOManageUI()
+            {
+                Nested._(() => GUILayout.BeginVertical(GUILayout.Width(contentWidth)), () =>
+                {
+                    Nested._(() => GUILayout.BeginHorizontal(), () =>
+                    {
+                        if (GUILayout.Button("新地圖")) { CreateNewMap(); }
+                        if (GUILayout.Button("儲存檔案")) { SaveMapData(); }
+                        if (GUILayout.Button("載入舊檔")) { LoadMapData(); }
+                    }, () => GUILayout.EndHorizontal());
+                }, () => GUILayout.EndVertical());
+            }
             void MakeGap()
             {
                 GUILayout.Space(20);
             }
-
             void ChineseSupport()
             {
                 Input.imeCompositionMode = IMECompositionMode.On;//讓輸入單元支援中文。
@@ -263,6 +423,7 @@ namespace Ron.Tools
         }
         void RebuildMapDic()
         {
+            Debug.LogWarning("重建字典...");
             if (tileMap == null)
             {
                 Debug.LogWarning("重建字典失敗，物件不存在");
@@ -487,168 +648,6 @@ namespace Ron.Tools
                     Gizmos.DrawLine(center + new Vector3(-s * mapUnitSize + offset, -0.5f, i * mapUnitSize + offset), center +
                         new Vector3(s * mapUnitSize - offset, -0.5f, i * mapUnitSize + offset));
                     Gizmos.DrawLine(center + new Vector3(i * mapUnitSize + offset, -0.5f, -s * mapUnitSize + offset), center + new Vector3(i * mapUnitSize + offset, -0.5f, s * mapUnitSize - offset));
-                }
-            }
-        }
-
-        void OnSceneGUI(SceneView sceneView)//繪製各種UI物件
-        {
-            //Handles.BeginGUI();
-            //{
-            //   若有需要在 SceneView 繪製各種UI功能
-            //}
-            //Handles.EndGUI();
-            //onPainting = true;  //測試用
-            if (!onPainting) return;
-            int controlID = GUIUtility.GetControlID(FocusType.Passive);
-            Event e = Event.current;
-            if (e.alt) return;//alt被按下表示使用者要旋轉畫面，不要進行繪製。
-            switch (e.GetTypeForControl(controlID))
-            {
-                case EventType.MouseDown://開始繪製
-                    if (e.button == 0)
-                    {
-                        GUIUtility.hotControl = controlID;
-                        mouseDown = true;
-                        Event.current.Use();
-                    }
-                    break;
-                case EventType.MouseUp://停止繪製
-                    if (e.button != 0) break;
-                    GUIUtility.hotControl = 0;
-                    mouseDown = false;
-                    Event.current.Use();
-                    break;
-                case EventType.MouseMove:
-                    break;
-                case EventType.MouseDrag:
-                    break;
-                case EventType.KeyDown:
-                    break;
-                case EventType.KeyUp:
-                    break;
-                case EventType.ScrollWheel:
-                    break;
-                case EventType.Repaint:
-                    break;
-                case EventType.Layout:
-                    break;
-                case EventType.DragUpdated:
-                    break;
-                case EventType.DragPerform:
-                    break;
-                case EventType.DragExited:
-                    break;
-                case EventType.Ignore:
-                    break;
-                case EventType.Used:
-                    break;
-                case EventType.ValidateCommand:
-                    break;
-                case EventType.ExecuteCommand:
-                    break;
-                case EventType.ContextClick:
-                    break;
-                case EventType.MouseEnterWindow:
-                    break;
-                case EventType.MouseLeaveWindow:
-                    break;
-                case EventType.TouchDown:
-                    break;
-                case EventType.TouchUp:
-                    break;
-                case EventType.TouchMove:
-                    break;
-                case EventType.TouchEnter:
-                    break;
-                case EventType.TouchLeave:
-                    break;
-                case EventType.TouchStationary:
-                    break;
-                default:
-                    break;
-            }
-            var pos = Vector3.zero;
-            Vector3Int posInt = Vector3Int.zero;
-            int dx = 0, dy = 0, dz = 0;
-            bool mouseInWorld = MouseToWorldPosition(e.mousePosition, Mathf.RoundToInt(layerObjs[selectedLayer].transform.position.y), out pos);
-
-            //繪製游標
-            if (mouseInWorld)
-            {
-                posInt = V3ToV3Int(pos);
-                dy = posInt.y;
-                dx = (posInt.x / mapUnitSize) * mapUnitSize; //貼齊格線小技巧
-                dz = (posInt.z / mapUnitSize) * mapUnitSize;
-                posInt = new Vector3Int(dx, posInt.y, dz);
-
-                float cursorOffset = (float)mapUnitSize / 2f;
-                Vector3 p1 = new Vector3(posInt.x - cursorOffset, posInt.y - 0.5f, posInt.z - cursorOffset);
-                Vector3 p2 = new Vector3(posInt.x - cursorOffset, posInt.y - 0.5f, posInt.z + cursorOffset);
-                Vector3 p3 = new Vector3(posInt.x + cursorOffset, posInt.y - 0.5f, posInt.z + cursorOffset);
-                Vector3 p4 = new Vector3(posInt.x + cursorOffset, posInt.y - 0.5f, posInt.z - cursorOffset);
-
-                Color handlesColor = Handles.color;
-                int thickness = 2;
-                Handles.color = cursorColor;
-                Handles.DrawLine(p1, p2, thickness);
-                Handles.DrawLine(p2, p3, thickness);
-                Handles.DrawLine(p3, p4, thickness);
-                Handles.DrawLine(p4, p1, thickness);
-                SceneView.RepaintAll();
-                Handles.color = handlesColor;
-            }
-            if (mouseDown)
-            {
-                if (mouseInWorld)
-                {
-                    Vector3Int dicPos = new Vector3Int(dx, 0, dz);
-                    if (e.shift)//刪除方塊
-                    {
-                        GameObject goToBeDeleted;
-                        if (mapDics[selectedLayer].TryGetValue(dicPos, out goToBeDeleted))
-                        {
-                            mapDics[selectedLayer].Remove(dicPos);
-                            DestroyImmediate(goToBeDeleted);
-                        }
-                    }
-                    else//繪製方塊
-                    {
-                        if (mapDics[selectedLayer].ContainsKey(dicPos) && !replaceItem) return;
-
-                        if (autoClearOverlapCube)
-                        {
-                            foreach (var dic in mapDics)
-                            {
-                                if (dic.ContainsKey(dicPos))
-                                {
-                                    GameObject goToBeDeleted;
-                                    if (dic.TryGetValue(dicPos, out goToBeDeleted))
-                                    {
-                                        dic.Remove(dicPos);
-                                        DestroyImmediate(goToBeDeleted);
-                                    }
-                                }
-                            }
-                        }
-
-                        if (mapDics[selectedLayer].ContainsKey(dicPos))
-                        {
-                            GameObject goToBeDeleted;
-                            if (mapDics[selectedLayer].TryGetValue(dicPos, out goToBeDeleted))
-                            {
-                                mapDics[selectedLayer].Remove(dicPos);
-                                DestroyImmediate(goToBeDeleted);
-                            }
-                        }
-
-                        //繪製方塊
-                        GameObject cube = (GameObject)PrefabUtility.InstantiatePrefab(mapItemPrefabs[selectedNum]);
-                        cube.transform.position = posInt;
-                        cube.transform.SetParent(layerObjs[selectedLayer].transform);
-
-                        mapDics[selectedLayer].Add(dicPos, cube);
-                    }
                 }
             }
         }
@@ -884,6 +883,7 @@ namespace Ron.Tools
 
         void SaveMapData()
         {
+            EditorSceneManager.SaveScene(EditorSceneManager.GetActiveScene());
             string defaultPath = tempPath;
             if (defaultPath == "") defaultPath = Application.dataPath;
 
@@ -910,7 +910,16 @@ namespace Ron.Tools
                 tempPath = Path.GetDirectoryName(filename);
                 tempFilename = Path.GetFileName(filename);
                 LoadData(filename);
+                EditorSceneManager.SaveScene(EditorSceneManager.GetActiveScene());
             }
+        }
+    }
+    public class ThreeDCubeTileMenu
+    {
+        [MenuItem("RonTool/3D Tile Map Editor 2022", false, 0)]
+        static void OpenControlPanel()
+        {
+            EditorWindow.GetWindow(typeof(ThreeDCubeTileEditor));
         }
     }
 }
