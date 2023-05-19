@@ -184,36 +184,38 @@ namespace Ron.Tools
             set { tileMap = value; }
             get
             {
-                if (tileMap != null) return tileMap;
-
-                Debug.LogWarning("tileMap物件消失，嘗試重建中");
-                CleanLayerContainer();
-                tileMap = GameObject.Find("TileMap");
-                if (tileMap != null)
-                {
-                    Debug.LogWarning("偵測到既存 tileMap，重建圖層");
-                    Transform[] trs = tileMap.GetComponentsInChildren<Transform>();
-                    foreach (var item in trs)
-                    {
-                        if (item.parent == tileMap.transform)//第一層子物件
-                        {
-                            AddNewLayer(item.gameObject);
-                        }
-                    }
-                    return tileMap;
-                }
-                else
-                {
-                    Debug.LogWarning("找不到 tileMap，重建主物件");
-                    tileMap = new GameObject();
-                    tileMap.name = "TileMap";
-
-                    AddDefaultLayer();
-
-                    return tileMap;
-                }
+                RebuildTileMap();
+                return tileMap;
             }
         }
+
+        private void RebuildTileMap()
+        {
+            if (tileMap != null) return;
+            Debug.LogWarning("tileMap物件消失，嘗試重建中");
+            CleanLayerContainer();
+            tileMap = GameObject.Find("TileMap");
+            if (tileMap != null)
+            {
+                Debug.LogWarning("偵測到既存 tileMap，重建圖層");
+                Transform[] trs = tileMap.GetComponentsInChildren<Transform>();
+                foreach (var item in trs)
+                {
+                    if (item.parent == tileMap.transform)//第一層子物件
+                    {
+                        AddNewLayer(item.gameObject);
+                    }
+                }
+            }
+            else
+            {
+                Debug.LogWarning("找不到 tileMap，重建主物件");
+                tileMap = new GameObject();
+                tileMap.name = "TileMap";
+                AddDefaultLayer();
+            }
+        }
+
         private void OnGUI()
         {
             //初始化
@@ -430,17 +432,16 @@ namespace Ron.Tools
                 return;
             }
 
-            for (int i = 0; i < layerName.Count(); i++)
+            for (int i = 0; i < layerNames.Count(); i++)
             {
                 mapDics[i].Clear();
                 Transform[] children = layerObjs[i].GetComponentsInChildren<Transform>();
-
                 foreach (var item in children)
                 {
                     if (item.parent == layerObjs[i].transform)
                     {
                         Vector3Int posInt = V3ToV3Int(item.transform.position);
-                        Vector3Int dicKey = new Vector3Int(posInt.x, 0, posInt.y);
+                        Vector3Int dicKey = posInt.WithY();
                         item.transform.position = posInt;//對齊方塊
                         if (!mapDics[i].ContainsKey(dicKey))
                         {
@@ -453,8 +454,8 @@ namespace Ron.Tools
         void SaveData(string filename)
         {
             TileMapData data = new TileMapData();
-            var r = TileMap;
             RebuildMapItemData();
+            RebuildTileMap();
             RebuildMapDic();
 
             Transform cam = Camera.main.transform;
@@ -599,7 +600,7 @@ namespace Ron.Tools
         private void OnFocus()
         {
             RebuildMapItemData();
-            var t = TileMap;
+            RebuildTileMap();
             RebuildMapDic();
         }
         private void OnEnable()
@@ -855,7 +856,7 @@ namespace Ron.Tools
         }
         void DisplayLayerList()
         {
-            selectedLayer = GUILayout.SelectionGrid(selectedLayer, layerNames.ToArray(), 1, GUILayout.Width(contentWidth - 20));
+            selectedLayer = GUILayout.SelectionGrid(selectedLayer, layerNames.ToArray(), 1, GUILayout.Width(contentWidth));
         }
         void RemoveMapLayer()
         {
