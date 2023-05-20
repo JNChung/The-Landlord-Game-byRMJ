@@ -31,6 +31,10 @@ bld/
 [Ll]og/
 [Ll]ogs/
 
+# 測試或其他 repo 的東西
+Tests/
+UnityLib/
+
 # Visual Studio 2015/2017 cache/options directory
 .vs/
 # Uncomment if you have tasks that create the project's static files in wwwroot
