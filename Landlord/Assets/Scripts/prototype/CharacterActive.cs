@@ -1,31 +1,51 @@
 using Ron.Base.Extension;
-using System.Collections;
+using System;
 using System.Collections.Generic;
+using System.Linq;
+using Unity.VisualScripting;
 using UnityEngine;
 
-
-public class CharacterActive 
+public class Character : ICanMove
 {
-    public void ResetPosition()
+    public float Hp;
+    public Vector3Int Position;
+    public int Speed;
+    public TileData GetCurrentTile()
     {
-        //GetMap
-        //FindNearestTile
-        //SetPositionOnTheTile(TilePos+TileHeight)
+        return StaticSceneData.TileManager.GetTileByCoordinate(Position);
     }
-    public void CanMoveTiles()
+    public IEnumerable<PathData> CanMoveTiles(int moveProp)
     {
-        //GetCurrentTile
-        //GetTileBySpeed, Where Tile Can Be Stand
-        //return tiles
-        //(how to show this tiles move?)
+        return MovementAlgorithm.NormalMove(this);
+    }
+
+    public int GetSpeed()
+    {
+        return Speed;
     }
 }
-
+public interface ICanMove
+{
+    public TileData GetCurrentTile();
+    public int GetSpeed();
+}
 //規格
 public interface GetTileByCoordinate
 {
     //宣告
     TileData GetTileByCoordinate(Vector3Int vector3Int);//地圖編輯器"那邊"要把這個功能實作出來
+}
+public class PathData
+{
+    public TileData Start;
+    public TileData Current;
+    public int Distance;
+    public PathData(TileData start, TileData current, int distance)
+    {
+        this.Current = current;
+        this.Start = start;
+        this.Distance = distance;
+    }
 }
 public class TileData : HasNeighbor<TileData>   //  函數式編程 <- -> 物件導向編程   //多執行緒
 {
@@ -48,6 +68,12 @@ public class TileData : HasNeighbor<TileData>   //  函數式編程 <- -> 物件
         //y 也要效仿
         return neighbors;
     }
+
+    public bool CanMove()
+    {
+        throw new NotImplementedException();
+    }
+
     GetTileByCoordinate tileMap;//應該要是 地圖編輯器  現在應該是 null
     //生命週期
 }//class 傳址(記憶體位址) //struct 傳值
