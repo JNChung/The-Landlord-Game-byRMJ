@@ -15,17 +15,21 @@ using UnityEditor.SceneManagement;
 
 namespace Ron.Tools
 {
-    public class ThreeDCubeTileEditor : EditorWindow
+    public class ThreeDCubeTileEditor : EditorWindow, GetTileByCoordinate
     {
         void OnSceneGUI(SceneView sceneView)//繪製各種UI物件
         {
+            #region 註解掉的
             //Handles.BeginGUI();
             //{
             //   若有需要在 SceneView 繪製各種UI功能
             //}
             //Handles.EndGUI();
             //onPainting = true;  //測試用
+            #endregion
+
             if (onPainting == false) return;
+
             int controlID = GUIUtility.GetControlID(FocusType.Passive);
             Event e = Event.current;
             if (e.alt) return;//alt被按下表示使用者要旋轉畫面，不要進行繪製。
@@ -45,56 +49,35 @@ namespace Ron.Tools
                     mouseDown = false;
                     Event.current.Use();
                     break;
+                #region 沒用到的事件
                 case EventType.MouseMove:
-                    break;
                 case EventType.MouseDrag:
-                    break;
                 case EventType.KeyDown:
-                    break;
                 case EventType.KeyUp:
-                    break;
                 case EventType.ScrollWheel:
-                    break;
                 case EventType.Repaint:
-                    break;
                 case EventType.Layout:
-                    break;
                 case EventType.DragUpdated:
-                    break;
                 case EventType.DragPerform:
-                    break;
                 case EventType.DragExited:
-                    break;
                 case EventType.Ignore:
-                    break;
                 case EventType.Used:
-                    break;
                 case EventType.ValidateCommand:
-                    break;
                 case EventType.ExecuteCommand:
-                    break;
                 case EventType.ContextClick:
-                    break;
                 case EventType.MouseEnterWindow:
-                    break;
                 case EventType.MouseLeaveWindow:
-                    break;
                 case EventType.TouchDown:
-                    break;
                 case EventType.TouchUp:
-                    break;
                 case EventType.TouchMove:
-                    break;
                 case EventType.TouchEnter:
-                    break;
                 case EventType.TouchLeave:
-                    break;
                 case EventType.TouchStationary:
-                    break;
                 default:
                     break;
+                    #endregion
             }
-            var pos = Vector3.zero;
+            Vector3 pos;
             Vector3Int posInt = Vector3Int.zero;
             bool mouseInWorld = MouseToWorldPosition(e.mousePosition, Mathf.RoundToInt(layerObjs[selectedLayer].transform.position.y), out pos);
 
@@ -914,6 +897,13 @@ namespace Ron.Tools
                 EditorSceneManager.SaveScene(EditorSceneManager.GetActiveScene());
             }
         }
+
+        public TileData GetTileByCoordinate(Vector3Int vector3Int)
+        {
+            var layer = layerObjs.FirstOrDefault(i => i.transform.position.y == vector3Int.y);
+            if (layer == null) return null;
+            return null;
+        }
     }
     public class ThreeDCubeTileMenu
     {
@@ -922,5 +912,10 @@ namespace Ron.Tools
         {
             EditorWindow.GetWindow(typeof(ThreeDCubeTileEditor));
         }
+    }
+
+    public class TilesStruct
+    {
+        public Dictionary<int, GameObject> Layers;//
     }
 }

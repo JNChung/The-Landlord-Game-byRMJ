@@ -63,3 +63,11 @@ crashlytics-build.properties
 *.unity/*.unity*/Lightmap-*[0-9].exr
 *.unity/*.unity*/Lightmap-*[0-9].meta
 /UserSettings/Layouts/default-2021.dwlt
+
+# 測試或其他 repo 的東西
+Tests/
+UnityLib/
+/**/UnityLib.meta
+Outside/
+/**/Editor/**/*Tests.cs
+/**/Editor/**/*Tests.cs.meta
