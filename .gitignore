@@ -34,6 +34,8 @@ bld/
 # 測試或其他 repo 的東西
 Tests/
 UnityLib/
+Outside/
+Outside.meta
 
 # Visual Studio 2015/2017 cache/options directory
 .vs/
