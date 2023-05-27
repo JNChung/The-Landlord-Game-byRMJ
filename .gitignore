@@ -35,7 +35,8 @@ bld/
 Tests/
 UnityLib/
 Outside/
-Outside.meta
+*_Test.*
+/*.prefab.meta
 
 # Visual Studio 2015/2017 cache/options directory
 .vs/
