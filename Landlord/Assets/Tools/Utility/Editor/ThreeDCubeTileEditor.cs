@@ -54,13 +54,13 @@ namespace Ron.Tools
                 {
                     if (UserOperateInfo.autoClearOverlapCube)
                     {
-                        foreach (var dic in mapDics)
+                        foreach (var dic in k_Layer_v_Tile.Values)
                         {
                             DeleteTile(key, dic);
                         }
                     }
 
-                    if (mapDics[UserOperateInfo.selectedLayer].ContainsKey(key) && UserOperateInfo.replaceItem)
+                    if (k_Layer_v_Tile[layerObjs[UserOperateInfo.selectedLayer]].ContainsKey(key) && UserOperateInfo.replaceItem)
                     {
                         DeleteTile(key);
                     }
@@ -69,7 +69,7 @@ namespace Ron.Tools
                     GameObject cube = (GameObject)PrefabUtility.InstantiatePrefab(mapItemPrefabs[UserOperateInfo.selectedMapItem]);
                     cube.transform.position = posInt;
                     cube.transform.SetParent(layerObjs[UserOperateInfo.selectedLayer].transform);
-                    mapDics[UserOperateInfo.selectedLayer].Add(key, cube);
+                    k_Layer_v_Tile[layerObjs[UserOperateInfo.selectedLayer]].Add(key, cube);
                 }
             }
 
@@ -78,9 +78,9 @@ namespace Ron.Tools
         void DeleteTile(Vector3Int key)
         {
             GameObject goToBeDeleted;
-            if (mapDics[UserOperateInfo.selectedLayer].TryGetValue(key, out goToBeDeleted))
+            if (k_Layer_v_Tile[layerObjs[UserOperateInfo.selectedLayer]].TryGetValue(key, out goToBeDeleted))
             {
-                mapDics[UserOperateInfo.selectedLayer].Remove(key);
+                k_Layer_v_Tile[layerObjs[UserOperateInfo.selectedLayer]].Remove(key);
                 DestroyImmediate(goToBeDeleted);
             }
         }
@@ -184,13 +184,13 @@ namespace Ron.Tools
         {
             layerObjs.Add(go);
             layerNames.Add(go.name);
-            mapDics.Add(new Dictionary<Vector3Int, GameObject>());//建立圖層時，要順便建立該圖層的字典容器。
+            k_Layer_v_Tile.Add(go, new Dictionary<Vector3Int, GameObject>());//建立圖層時，要順便建立該圖層的字典容器。
         }
         private void CleanLayerContainer()
         {
             layerObjs.Clear();
             layerNames.Clear();
-            mapDics.Clear();
+            k_Layer_v_Tile.Clear();
         }
         //containers
         static List<GameObject> mapItemPrefabs = new List<GameObject>();
@@ -199,10 +199,10 @@ namespace Ron.Tools
 
         static List<GameObject> layerObjs = new List<GameObject>();
         static List<string> layerNames = new List<string>();
-        static List<Dictionary<Vector3Int, GameObject>> mapDics = new List<Dictionary<Vector3Int, GameObject>>();
+        static Dictionary<GameObject, Dictionary<Vector3Int, GameObject>> k_Layer_v_Tile = new Dictionary<GameObject, Dictionary<Vector3Int, GameObject>>();
 
         //使用者操作狀態
-       
+
 
 
         private void OnFocus()
@@ -232,7 +232,7 @@ namespace Ron.Tools
 
             for (int i = 0; i < layerNames.Count(); i++)
             {
-                mapDics[i].Clear();
+                k_Layer_v_Tile[layerObjs[i]].Clear();
                 Transform[] children = layerObjs[i].GetComponentsInChildren<Transform>();
                 foreach (var item in children)
                 {
@@ -241,9 +241,9 @@ namespace Ron.Tools
                         Vector3Int posInt = V3ToV3Int(item.transform.position);
                         Vector3Int dicKey = posInt.WithY();
                         item.transform.position = posInt;//對齊方塊
-                        if (!mapDics[i].ContainsKey(dicKey))
+                        if (!k_Layer_v_Tile[layerObjs[i]].ContainsKey(dicKey))
                         {
-                            mapDics[i].Add(dicKey, item.gameObject);
+                            k_Layer_v_Tile[layerObjs[i]].Add(dicKey, item.gameObject);
                         }
                     }
                 }
@@ -252,12 +252,6 @@ namespace Ron.Tools
 
         #region interface functions
 
-        public TileData GetTileByCoordinate(Vector3Int vector3Int)
-        {
-            var layer = layerObjs.FirstOrDefault(i => i.transform.position.y == vector3Int.y);
-            var result = mapDics[layerObjs.IndexOf(layer)][vector3Int].GetComponent<Tile>().tileData;
-            return result;
-        }
         #endregion
 
         #region IO Functions
@@ -415,7 +409,7 @@ namespace Ron.Tools
                     ob.transform.position = b.pos;
                     ob.transform.SetParent(go.transform);
                     var dicPos = new Vector3Int(b.pos.x, 0, b.pos.z);
-                    mapDics[dicNum].Add(dicPos, ob);
+                    k_Layer_v_Tile[layerObjs[dicNum]].Add(dicPos, ob);
                 }
                 dicNum++;
             }
@@ -750,7 +744,7 @@ namespace Ron.Tools
                 DestroyImmediate(layerObjs[UserOperateInfo.selectedLayer]);//刪除圖層管理的GameObject
                 layerObjs.Remove(layerObjs[UserOperateInfo.selectedLayer]);
                 layerNames.Remove(layerNames[UserOperateInfo.selectedLayer]);
-                mapDics.Remove(mapDics[UserOperateInfo.selectedLayer]);
+                k_Layer_v_Tile.Remove(layerObjs[UserOperateInfo.selectedLayer]);
                 UserOperateInfo.selectedLayer = 0;
             }
             void CreateNewMap()
@@ -856,12 +850,24 @@ namespace Ron.Tools
 
         IPath IMapProvider.GetTileByCoordinate(Vector3Int vector3Int)
         {
-            throw new NotImplementedException();
+            var layer = layerObjs.FirstOrDefault(i => i.transform.position.y == vector3Int.y);
+            var result = k_Layer_v_Tile[layer][vector3Int].GetComponent<Tile>().TileData;
+            return result;
         }
 
         ICollection<IPath> IMapProvider.GetMap()
         {
-            throw new NotImplementedException();
+            HashSet<IPath> paths = new HashSet<IPath>();
+            foreach (var layer in layerObjs)
+            {
+                foreach (var tile in k_Layer_v_Tile[layer].Values)
+                {
+                    var tileComp = tile.GetComponent<Tile>();
+                    paths.Add(tileComp.TileData);
+                } 
+            }
+
+            return paths;
         }
     }
 
