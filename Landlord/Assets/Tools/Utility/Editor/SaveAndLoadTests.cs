@@ -7,11 +7,11 @@ using UnityEngine;
 
 public class SaveAndLoadTextTests
 {
-    SaveAndLoad saveAndLoad;
+    SaveAndLoadForIO saveAndLoad;
     [SetUp]
     public void SetUp()
     {
-        saveAndLoad = new SaveAndLoad("TestDatas/myData.txt");
+        saveAndLoad = new SaveAndLoadForIO("TestDatas/myData.txt");
     }
     [TearDown]
     public void TearDown()
@@ -42,11 +42,11 @@ public class SaveAndLoadJsonTests
         public string Description;
         public int Hp;
     }
-    SaveAndLoad saveAndLoad;
+    SaveAndLoadForIO saveAndLoad;
     [SetUp]
     public void SetUp()
     {
-        saveAndLoad = new SaveAndLoad("TestDatas/myJson.txt");
+        saveAndLoad = new SaveAndLoadForIO("TestDatas/myJson.txt");
     }
     [TearDown]
     public void TearDown()

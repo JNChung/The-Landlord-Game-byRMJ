@@ -8,7 +8,7 @@ using UnityEngine.Networking.Types;
 
 namespace RonTools
 {
-    public class SaveAndLoad
+    public class SaveAndLoadForIO
     {
         string filename;
         string fullpath;
@@ -40,16 +40,16 @@ namespace RonTools
             reader.Close();
             return JsonUtility.FromJson<T>(json);
         }
-        public SaveAndLoad()
+        public SaveAndLoadForIO()
         {
         }
-        public SaveAndLoad(string fileName)
+        public SaveAndLoadForIO(string fileName)
         {
             InitMember(fileName);
         }
 
 
-        public SaveAndLoad(string filePath, string fileName)
+        public SaveAndLoadForIO(string filePath, string fileName)
         {
             InitMember(filePath, fileName);
         }

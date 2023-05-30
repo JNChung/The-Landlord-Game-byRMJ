@@ -2,15 +2,16 @@ using static Ron.Base.Extension.BasicExtension;
 using System.Collections.Generic;
 using System.Linq;
 using Unity.VisualScripting;
+using UnityEngine;
 
 public delegate IEnumerable<PathData> GetCanMoveTiles(ICanMove mover);
 public class MovementAlgorithm
 {
-    public static IEnumerable<PathData> NormalMove(ICanMove mover)
+    public static IEnumerable<PathData> NormalMove(ICanMove mover, IMapProvider mapProvider)
     {
         List<PathData> result = new List<PathData>();
-        HashSet<TileData> thisGeneration = new HashSet<TileData>();
-        HashSet<TileData> pastGeneration = new HashSet<TileData>();
+        HashSet<IPath> thisGeneration = new HashSet<IPath>();
+        HashSet<IPath> pastGeneration = new HashSet<IPath>();
         //初始化
         //1. 選定初始世代
         thisGeneration.Add(mover.GetCurrentTile());
@@ -26,14 +27,14 @@ public class MovementAlgorithm
 
         return result;
 
-        HashSet<TileData> GetNextGenerationByThisGeneration(HashSet<TileData> currentGeneration)
+        HashSet<IPath> GetNextGenerationByThisGeneration(HashSet<IPath> currentGeneration)
         {
-            HashSet<TileData> nextGeneration = new HashSet<TileData>();
+            HashSet<IPath> nextGeneration = new HashSet<IPath>();
             foreach (var t in currentGeneration)
             {
-                var newGenerations = t.GetNeighbors()
+                var newGenerations = t.GetNeighbors(mapProvider)
                     .Where(i =>
-                            i.CanMove() &&
+                            i.CanStand() &&
                             Not(pastGeneration.Contains(i)) &&
                             Not(currentGeneration.Contains(t)) &&
                             Not(nextGeneration.Contains(t))
@@ -44,4 +45,10 @@ public class MovementAlgorithm
             return nextGeneration;
         }
     }
+}
+public interface IPath
+{
+    public Vector3Int GetLocation();
+    public ICollection<IPath> GetNeighbors(IMapProvider provider);
+    public bool CanStand();
 }
