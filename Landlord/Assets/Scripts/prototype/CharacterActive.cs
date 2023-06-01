@@ -59,9 +59,17 @@ public class TileData : IPath
         this.TileType = tileType;
     }
 
+    public bool Enabled;
+    public bool Obstacle;
+
+    public bool ShowPath()
+    {
+        return Enabled;
+    }
+
     public bool CanStand()
     {
-        throw new NotImplementedException();
+        return Obstacle;
     }
 
     public Vector3Int GetLocation()

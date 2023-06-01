@@ -4,12 +4,14 @@ using System.Collections.Generic;
 using UnityEngine;
 
 
-public class TileUI : MonoBehaviour
+public class TileD : MonoBehaviour
 {
-    // Start is called before the first frame update
+    public TileData TileData { get; private set; }
+    public string Type;//目前沒用到
     GameObject canMoveUI;
     void Start()
     {
+        TileData = new TileData(this.transform.position.ToV3Int(), Type);
         canMoveUI = transform.Find("UiCanMove").gameObject;
         canMoveUI.SetActive(false);
     }
@@ -17,11 +19,27 @@ public class TileUI : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        canMoveUI.SetActive(Random.value > 0.3);
+        ShowState();
     }
 
-    void GetTile()
+    private void ShowState()
     {
-        StaticSceneData.TileManager.GetTileByCoordinate(transform.position.ToV3Int());
+        TileData.ShowPath();
     }
+
+
+
+    // Start is called before the first frame update
+    
+
+    // Update test
+    //void Update()
+    //{
+    //    canMoveUI.SetActive(Random.value > 0.3);
+    //}
+
+    //void GetTile()
+    //{
+    //    StaticSceneData.TileManager.GetTileByCoordinate(transform.position.ToV3Int());
+    //}
 }

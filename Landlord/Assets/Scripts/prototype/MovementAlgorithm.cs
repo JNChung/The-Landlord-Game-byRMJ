@@ -51,4 +51,6 @@ public interface IPath
     public Vector3Int GetLocation();
     public ICollection<IPath> GetNeighbors(IMapProvider provider);
     public bool CanStand();
+
+    public bool ShowPath();
 }
