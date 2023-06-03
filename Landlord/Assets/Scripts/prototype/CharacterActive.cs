@@ -66,16 +66,19 @@ public class TileData : IPath
     }
 
     public bool Enabled;
-    public bool Obstacle;
+    public bool Obstacle = false;
+    public bool ShowPathUI;
 
-    public bool ShowPath()
+    public bool IsUiShowing => ShowPathUI;
+
+    public void ShowPath(bool open = true)
     {
-        return Enabled;
+        ShowPathUI = open;
     }
 
     public bool CanStand()
     {
-        return Obstacle;
+        return Obstacle == false;
     }
 
     public Vector3Int GetLocation()
@@ -83,7 +86,7 @@ public class TileData : IPath
         return Location;
     }
 
-    public ICollection<IPath> GetNeighbors(IMapProvider provider)
+    public IEnumerable<IPath> GetNeighbors(IMapProvider provider)
     {
         List<Vector3Int> locations = new List<Vector3Int>();
         locations.Add(Location.AddX(1));

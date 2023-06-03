@@ -24,13 +24,13 @@ public class TileD : MonoBehaviour
 
     private void ShowState()
     {
-        TileData.ShowPath();
+        canMoveUI.SetActive(TileData.IsUiShowing);
     }
 
 
 
     // Start is called before the first frame update
-    
+
 
     // Update test
     //void Update()

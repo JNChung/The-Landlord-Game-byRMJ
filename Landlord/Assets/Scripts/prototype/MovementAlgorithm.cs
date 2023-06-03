@@ -32,14 +32,19 @@ public class MovementAlgorithm
             HashSet<IPath> nextGeneration = new HashSet<IPath>();
             foreach (var t in currentGeneration)
             {
-                var newGenerations = t.GetNeighbors(mapProvider)
-                    .Where(i =>
-                            i.CanStand() &&
-                            Not(pastGeneration.Contains(i)) &&
-                            Not(currentGeneration.Contains(t)) &&
-                            Not(nextGeneration.Contains(t))
-                            );
-                nextGeneration.AddRange(newGenerations);
+                var newGenerations = t.GetNeighbors(mapProvider);//這段好像有點問題，先不用 linq
+                foreach (var i in newGenerations)
+                {
+                    if (i.CanStand() == false)
+                        continue;
+                    if (pastGeneration.Contains(i))
+                        continue;
+                    if (currentGeneration.Contains(i))
+                        continue;
+                    if(nextGeneration.Contains(i))
+                        continue;
+                    nextGeneration.Add(i);
+                }
                 pastGeneration.Add(t);
             }
             return nextGeneration;
@@ -49,8 +54,8 @@ public class MovementAlgorithm
 public interface IPath
 {
     public Vector3Int GetLocation();
-    public ICollection<IPath> GetNeighbors(IMapProvider provider);
+    public IEnumerable<IPath> GetNeighbors(IMapProvider provider);
     public bool CanStand();
 
-    public bool ShowPath();
+    public void ShowPath(bool open = true);
 }
