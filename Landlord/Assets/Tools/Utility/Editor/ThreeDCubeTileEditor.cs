@@ -15,8 +15,14 @@ using UnityEditor.SceneManagement;
 
 namespace Ron.Tools
 {
-    public class ThreeDCubeTileEditor : EditorWindow, IMapProvider
+    public class ThreeDCubeTileEditor : EditorWindow
     {
+        public static ThreeDCubeTileEditor tileEditor;
+        public ThreeDCubeTileEditor()
+        {
+            tileEditor = this;
+        }
+
         UserOperateInfo userOperateInfo = new UserOperateInfo();
         static bool onPainting = false;
         void OnSceneGUI(SceneView sceneView)//繪製各種UI物件
@@ -846,28 +852,6 @@ namespace Ron.Tools
                     Gizmos.DrawLine(center + new Vector3(i * mapUnitSize + offset, -0.5f, -s * mapUnitSize + offset), center + new Vector3(i * mapUnitSize + offset, -0.5f, s * mapUnitSize - offset));
                 }
             }
-        }
-
-        IPath IMapProvider.GetTileByCoordinate(Vector3Int vector3Int)
-        {
-            var layer = layerObjs.FirstOrDefault(i => i.transform.position.y == vector3Int.y);
-            var result = k_Layer_v_Tile[layer][vector3Int].GetComponent<TileD>().TileData;
-            return result;
-        }
-
-        ICollection<IPath> IMapProvider.GetMap()
-        {
-            HashSet<IPath> paths = new HashSet<IPath>();
-            foreach (var layer in layerObjs)
-            {
-                foreach (var tile in k_Layer_v_Tile[layer].Values)
-                {
-                    var tileComp = tile.GetComponent<TileD>();
-                    paths.Add(tileComp.TileData);
-                } 
-            }
-
-            return paths;
         }
     }
 
