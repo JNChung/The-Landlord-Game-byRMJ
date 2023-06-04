@@ -1,28 +1,26 @@
-using static Ron.Base.Extension.BasicExtension;
 using System.Collections.Generic;
 using System.Linq;
 using Unity.VisualScripting;
-using UnityEngine;
 
-public delegate IEnumerable<PathData> GetCanMoveTiles(ICanMove mover);
-public class MovementAlgorithm
+public delegate IEnumerable<PathData> MoveWay(ICanMove mover, IMapProvider mapProvider);
+public class MovementAlgorithm//這是更核心的東西，應該跟 BL層解耦合
 {
     public static IEnumerable<PathData> NormalMove(ICanMove mover, IMapProvider mapProvider)
     {
         List<PathData> result = new List<PathData>();
-        HashSet<IPath> thisGeneration = new HashSet<IPath>();
+        HashSet<IPath> thisGeneration = new HashSet<IPath>();//這只能確定取到的都是一樣的物件，但，等值的不能判斷
         HashSet<IPath> pastGeneration = new HashSet<IPath>();
         //初始化
         //1. 選定初始世代
-        thisGeneration.Add(mover.GetCurrentTile());
-        for (int i = 1; i <= mover.GetSpeed(); i++)//不包含初始位置
+        thisGeneration.Add(mover.GetCurrentTile(mapProvider));
+        for (int i = 1; i <= mover.GetSpeed(); i++)//必須是 mover?
         {
             //每回合要做的事
             //1. 遍歷目前世代：
             //1.1 拿到他們的次世代，倒到 可走磚
             thisGeneration = GetNextGenerationByThisGeneration(thisGeneration);// 
 
-            result.AddRange<PathData>(thisGeneration.Select(item => new PathData(mover.GetCurrentTile(), item, i)));
+            result.AddRange<PathData>(thisGeneration.Select(item => new PathData(mover.GetCurrentTile(mapProvider), item, i)));
         }
 
         return result;
@@ -41,7 +39,7 @@ public class MovementAlgorithm
                         continue;
                     if (currentGeneration.Contains(i))
                         continue;
-                    if(nextGeneration.Contains(i))
+                    if (nextGeneration.Contains(i))
                         continue;
                     nextGeneration.Add(i);
                 }
@@ -50,12 +48,4 @@ public class MovementAlgorithm
             return nextGeneration;
         }
     }
-}
-public interface IPath
-{
-    public Vector3Int GetLocation();
-    public IEnumerable<IPath> GetNeighbors(IMapProvider provider);
-    public bool CanStand();
-
-    public void ShowPath(bool open = true);
 }

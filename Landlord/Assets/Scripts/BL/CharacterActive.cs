@@ -6,19 +6,21 @@ public class Character : ICanMove
     public float Hp;
     public Vector3Int Position;
     public int Speed;
-    public Character(float hp, Vector3Int pos, int speed)
+    MoveWay moveWay;
+    public Character(float hp, Vector3Int pos, int speed, MoveWay moveWay = null)
     {
         this.Hp = hp;
         this.Position = pos;
         this.Speed = speed;
+        if (moveWay == null) moveWay = MovementAlgorithm.NormalMove;
     }
-    public IPath GetCurrentTile()
+    public IPath GetCurrentTile(IMapProvider mapProvider)
     {
-        return StaticSceneData.TileManager.GetTileByCoordinate(Position);
+        return mapProvider.GetTileByCoordinate(Position);
     }
-    public IEnumerable<PathData> CanMoveTiles(int moveProp)
+    public IEnumerable<PathData> CanMoveTiles(IMapProvider mapProvider)
     {
-        return MovementAlgorithm.NormalMove(this, StaticSceneData.TileManager);
+        return moveWay(this, mapProvider);
     }
 
     public int GetSpeed()

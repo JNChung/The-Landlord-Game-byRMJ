@@ -34,7 +34,7 @@ public class CharacterD : MonoBehaviour
         if (Selected && showPathDone == false)
         {
             showPathDone = true;
-            var paths = character.CanMoveTiles(character.Speed);
+            var paths = character.CanMoveTiles(StaticSceneData.TileManager);
             foreach (var path in paths)
             {
                 path.Current.ShowPath();
