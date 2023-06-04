@@ -1,60 +1,8 @@
-using Ron.Base.Extension;
-using System;
 using System.Collections.Generic;
 using System.Linq;
-using Unity.VisualScripting;
 using UnityEngine;
-using UnityEngine.Tilemaps;
-using static MovementAlgorithm;
+using Ron.Base.Extension;
 
-public class Character : ICanMove
-{
-    public float Hp;
-    public Vector3Int Position;
-    public int Speed;
-    public Character(float hp, Vector3Int pos, int speed)
-    {
-        this.Hp = hp;
-        this.Position = pos;
-        this.Speed = speed;
-    }
-    public IPath GetCurrentTile()
-    {
-        return StaticSceneData.TileManager.GetTileByCoordinate(Position);
-    }
-    public IEnumerable<PathData> CanMoveTiles(int moveProp)
-    {
-        return MovementAlgorithm.NormalMove(this, StaticSceneData.TileManager);
-    }
-
-    public int GetSpeed()
-    {
-        return Speed;
-    }
-}
-public interface ICanMove
-{
-    public IPath GetCurrentTile();
-    public int GetSpeed();
-}
-//規格
-public interface IMapProvider
-{
-    IPath GetTileByCoordinate(Vector3Int vector3Int);//地圖編輯器"那邊"要把這個功能實作出來
-    ICollection<IPath> GetMap();
-}
-public class PathData
-{
-    public IPath Start;
-    public IPath Current;
-    public int Distance;
-    public PathData(IPath start, IPath current, int distance)
-    {
-        this.Current = current;
-        this.Start = start;
-        this.Distance = distance;
-    }
-}
 public class TileData : IPath
 {
     public readonly Vector3Int Location;
