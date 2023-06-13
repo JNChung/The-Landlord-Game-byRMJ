@@ -13,7 +13,7 @@ public class MovementAlgorithm//這是更核心的東西，應該跟 BL層解耦
         //初始化
         //1. 選定初始世代
         thisGeneration.Add(mover.GetCurrentTile(mapProvider));
-        for (int i = 1; i <= mover.GetSpeed(); i++)//必須是 mover?
+        for (int i = 1; i <= mover.GetHowFarItCanBe(); i++)//必須是 mover?
         {
             //每回合要做的事
             //1. 遍歷目前世代：

@@ -15,13 +15,12 @@ public class TileData : IPath
 
     public bool Enabled;
     public bool Obstacle = false;
-    public bool ShowPathUI;
 
-    public bool IsUiShowing => ShowPathUI;
+    public bool IsUiShowing ;
 
-    public void ShowPath(bool open = true)
+    public void ShowCanMoveSign(bool openMoveSign = true)
     {
-        ShowPathUI = open;
+        IsUiShowing = openMoveSign;
     }
 
     public bool CanStand()

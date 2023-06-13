@@ -22,3 +22,18 @@
         - [ ] 條件觸發 (榮)
     - [ ] 文本編輯器 unit test (榮)
     - [ ] 文本編輯器 final code (榮)
+## 專案分層
+### Business Layer
+dnd 核心玩法
+### User Case
+使用者透過我們這套系統會做的一切行為
+* Idle
+* Move
+* Interactive
+### User Interact
+使用者交互
+1. 展示層
+    * CharacterD
+    * TileD
+1. 輸入層
+    * MainProcess

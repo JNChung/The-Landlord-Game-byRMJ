@@ -1,18 +1,32 @@
 using Ron.Base.Extension;
+using Ron.Tools.Unity;
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
 
-public class TileD : MonoBehaviour
+public class TileD : MonoBehaviour, UiComponent
 {
+    public bool Selected => MainProcess.CurrentUserInfo.SelectedGameObject == this.gameObject;
+
+    //可編輯變數
+    [SerializeField] bool TestSelected;
     public TileData TileData { get; private set; }
     public string Type;//目前沒用到
     GameObject canMoveUI;
+
+
+    public ObjectType GetObjectType() => ObjectType.Tile;
+    private void Awake()
+    {
+        StaticSceneData.GameObjectInfo.Add(gameObject, this);
+    }
+
     void Start()
     {
         TileData = new TileData(this.transform.position.ToV3Int(), Type);
-        canMoveUI = transform.Find("UiCanMove").gameObject;
+        canMoveUI = transform.FindOffspring("UiCanMove").gameObject;
         canMoveUI.SetActive(false);
     }
 
@@ -20,12 +34,16 @@ public class TileD : MonoBehaviour
     void Update()
     {
         ShowState();
+        //ShowSelected();
     }
+
 
     private void ShowState()
     {
         canMoveUI.SetActive(TileData.IsUiShowing);
     }
+
+
 
 
 

@@ -7,5 +7,5 @@ public interface IPath
     public IEnumerable<IPath> GetNeighbors(IMapProvider provider);
     public bool CanStand();
 
-    public void ShowPath(bool open = true);
+    public void ShowCanMoveSign(bool open = true);
 }

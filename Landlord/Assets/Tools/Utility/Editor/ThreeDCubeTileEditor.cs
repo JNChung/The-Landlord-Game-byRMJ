@@ -847,9 +847,9 @@ namespace Ron.Tools
                 float offset = 0.5f * mapUnitSize;
                 for (int i = -s; i < s; i++)
                 {
-                    Gizmos.DrawLine(center + new Vector3(-s * mapUnitSize + offset, -0.5f, i * mapUnitSize + offset), center +
-                        new Vector3(s * mapUnitSize - offset, -0.5f, i * mapUnitSize + offset));
-                    Gizmos.DrawLine(center + new Vector3(i * mapUnitSize + offset, -0.5f, -s * mapUnitSize + offset), center + new Vector3(i * mapUnitSize + offset, -0.5f, s * mapUnitSize - offset));
+                    Gizmos.DrawLine(center + new Vector3(-s * mapUnitSize + offset, -1f, i * mapUnitSize + offset), center +
+                        new Vector3(s * mapUnitSize - offset, -1f, i * mapUnitSize + offset));
+                    Gizmos.DrawLine(center + new Vector3(i * mapUnitSize + offset, -1f, -s * mapUnitSize + offset), center + new Vector3(i * mapUnitSize + offset, -1f, s * mapUnitSize - offset));
                 }
             }
         }

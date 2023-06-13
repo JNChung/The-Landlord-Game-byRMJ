@@ -8,8 +8,9 @@ using UnityEngine.Tilemaps;
 public class TileManager : MonoBehaviour, IMapProvider
 {
     static List<GameObject> layerObjs = new List<GameObject>();
-    static Dictionary<GameObject, Dictionary<Vector3Int, GameObject>> k_Layer_v_Tile = new Dictionary<GameObject, Dictionary<Vector3Int, GameObject>>();
+    static Dictionary<GameObject, Dictionary<Vector3Int, GameObject>> k_Layer_v_TileDictionary = new Dictionary<GameObject, Dictionary<Vector3Int, GameObject>>();
 
+    static GameObject tileMap;
     IPath IMapProvider.GetTileByCoordinate(Vector3Int vector3Int)
     {
         RebuildTileMap();
@@ -22,16 +23,15 @@ public class TileManager : MonoBehaviour, IMapProvider
         }
         Debug.Log("找到layer");
 
-        var result = k_Layer_v_Tile[layer][vector3Int.WithY()].GetComponent<TileD>().TileData;
+        var result = k_Layer_v_TileDictionary[layer][vector3Int.WithY()].GetComponent<TileD>().TileData;
         return result;
     }
-
     ICollection<IPath> IMapProvider.GetMap()
     {
         HashSet<IPath> paths = new HashSet<IPath>();
         foreach (var layer in layerObjs)
         {
-            foreach (var tile in k_Layer_v_Tile[layer].Values)
+            foreach (var tile in k_Layer_v_TileDictionary[layer].Values)
             {
                 var tileComp = tile.GetComponent<TileD>();
                 paths.Add(tileComp.TileData);
@@ -40,7 +40,6 @@ public class TileManager : MonoBehaviour, IMapProvider
 
         return paths;
     }
-    static GameObject tileMap;
 
     private void RebuildTileMap()
     {
@@ -79,15 +78,13 @@ public class TileManager : MonoBehaviour, IMapProvider
     private void AddNewLayer(GameObject go)
     {
         layerObjs.Add(go);
-        k_Layer_v_Tile.Add(go, new Dictionary<Vector3Int, GameObject>());//建立圖層時，要順便建立該圖層的字典容器。
+        k_Layer_v_TileDictionary.Add(go, new Dictionary<Vector3Int, GameObject>());//建立圖層時，要順便建立該圖層的字典容器。
     }
-
     private void CleanLayerContainer()
     {
         layerObjs.Clear();
-        k_Layer_v_Tile.Clear();
+        k_Layer_v_TileDictionary.Clear();
     }
-
     void RebuildMapDicByHierachy()
     {
         Debug.LogWarning("重建字典...");
@@ -99,7 +96,7 @@ public class TileManager : MonoBehaviour, IMapProvider
 
         for (int i = 0; i < layerObjs.Count(); i++)
         {
-            k_Layer_v_Tile[layerObjs[i]].Clear();
+            k_Layer_v_TileDictionary[layerObjs[i]].Clear();
             Transform[] children = layerObjs[i].GetComponentsInChildren<Transform>();
             foreach (var item in children)
             {
@@ -108,14 +105,16 @@ public class TileManager : MonoBehaviour, IMapProvider
                     Vector3Int posInt = item.transform.position.ToV3Int();
                     Vector3Int dicKey = posInt.WithY();
                     item.transform.position = posInt;//對齊方塊
-                    if (!k_Layer_v_Tile[layerObjs[i]].ContainsKey(dicKey))
+                    if (!k_Layer_v_TileDictionary[layerObjs[i]].ContainsKey(dicKey))
                     {
-                        k_Layer_v_Tile[layerObjs[i]].Add(dicKey, item.gameObject);
+                        k_Layer_v_TileDictionary[layerObjs[i]].Add(dicKey, item.gameObject);
                     }
                 }
             }
         }
     }
+
+
 
     // Start is called before the first frame update
     void Start()
