@@ -12,7 +12,8 @@ public class TileD : MonoBehaviour, UiComponent
 
     //可編輯變數
     [SerializeField] bool TestSelected;
-    public TileData TileData { get; private set; }
+    [SerializeField] List<string> Choice;
+    public Tile TileData { get; private set; }
     public string Type;//目前沒用到
     GameObject canMoveUI;
 
@@ -25,7 +26,9 @@ public class TileD : MonoBehaviour, UiComponent
 
     void Start()
     {
-        TileData = new TileData(this.transform.position.ToV3Int(), Type);
+        TileData = new Tile(this.transform.position.ToV3Int(), Type);
+        TileData.InitializeChoice(Choice);
+
         canMoveUI = transform.FindOffspring("UiCanMove").gameObject;
         canMoveUI.SetActive(false);
     }

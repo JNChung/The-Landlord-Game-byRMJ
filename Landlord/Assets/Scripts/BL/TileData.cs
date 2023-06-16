@@ -2,12 +2,14 @@ using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 using Ron.Base.Extension;
+using Unity.VisualScripting;
 
-public class TileData : IPath
+public class Tile : IPath, IInteractable
 {
     public readonly Vector3Int Location;
     public readonly string TileType;
-    public TileData(Vector3Int location, string tileType)
+    HashSet<string> choices = new HashSet<string>();
+    public Tile(Vector3Int location, string tileType)
     {
         this.Location = location;
         this.TileType = tileType;
@@ -16,7 +18,7 @@ public class TileData : IPath
     public bool Enabled;
     public bool Obstacle = false;
 
-    public bool IsUiShowing ;
+    public bool IsUiShowing;
 
     public void ShowCanMoveSign(bool openMoveSign = true)
     {
@@ -47,5 +49,22 @@ public class TileData : IPath
         //要在東西南北都+-1找鄰居
         //y 也要效仿
         return neighbors;
+    }
+
+    public IEnumerable<string> GetChoice()
+    {
+        choices.Add("取消");
+        return choices;
+    }
+
+    public IActionResult Be(string behavior)
+    {
+        throw new System.NotImplementedException();
+    }
+
+    public void InitializeChoice(IEnumerable<string> choice)
+    {
+        choices.Clear();
+        choices.AddRange(choice);
     }
 }

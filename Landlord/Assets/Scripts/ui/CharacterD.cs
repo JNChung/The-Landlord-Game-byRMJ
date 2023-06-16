@@ -13,9 +13,9 @@ public class CharacterD : MonoBehaviour, UiComponent
     [SerializeField] bool TestSelected;
 
     //私有變數
-    Character character;
+    DndCharacter character;
     Animator animator;
-    TileData moveTarget;
+    Tile moveTarget;
     private bool hasMoveTarget => moveTarget != null;
     public Renderer objectRenderer; // 要改變顏色的物體的渲染器
 
@@ -30,7 +30,7 @@ public class CharacterD : MonoBehaviour, UiComponent
     void Start()
     {
         InitialPosition();
-        character = new Character(100, transform.position.ToV3Int(), 3);
+        character = new DndCharacter(100, transform.position.ToV3Int(), 3);
         //animator = GetComponent<Animator>();
     }
 

@@ -19,3 +19,7 @@ public class GameObjectConnotation
         datastruct.Add(go, guide);
     }
 }
+public static class StaticValue
+{
+
+}

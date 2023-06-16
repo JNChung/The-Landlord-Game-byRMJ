@@ -50,6 +50,11 @@ public class MainProcess : MonoBehaviour
     {
         switch (CurrentUserInfo.CurrentProcess)
         {
+            case ProcessType.WaitForOthers:
+                // 等候其他人的行動
+                // 只能看不能做啥
+                break;
+
             case ProcessType.WaitForSelect:
                 // 等候選擇階段：
                 // 等候 直到 取得輸入訊號
@@ -72,6 +77,9 @@ public class MainProcess : MonoBehaviour
                 // 若為 GUI 物件，則 將 此回合主動的角色的移動進入CD時間，並進入 表演階段(或是進入同回合下一位角色的移動階段)
 
                 WaitForInteract();
+
+                break;
+            case ProcessType.ActDone:
 
                 break;
             case ProcessType.PlayAnimation:
@@ -109,7 +117,7 @@ public class MainProcess : MonoBehaviour
             case ObjectType.Tile:
                 //ShowTileGUI
                 CurrentUserInfo.CurrentCharacter.MoveTo(CurrentUserInfo.SelectedGameObject.transform.position);
-                ChangeProcessState(ProcessType.PlayAnimation);
+                ChangeProcessState(ProcessType.ActDone);
                 break;
             case ObjectType.Character:
                 //ShowCharacterGUI
@@ -162,11 +170,6 @@ public class MainProcess : MonoBehaviour
     }
 }
 
-public interface IInteractable
-{
-    IEnumerable<string> GetChoice();
-    IActionResult Be(string behavior);
-}
 
 public interface IActionResult
 {
@@ -183,14 +186,16 @@ public class UserInfo
 {
     // 目前的狀態
     public ProcessType CurrentProcess;
-    public Character CurrentCharacter;
+    public DndCharacter CurrentCharacter;
     public GameObject SelectedGameObject;
 }
 public enum ProcessType
 {
     WaitForSelect,
     WaitForInteract,
-    PlayAnimation
+    PlayAnimation,
+    WaitForOthers,
+    ActDone
 }
 public enum ObjectType
 {

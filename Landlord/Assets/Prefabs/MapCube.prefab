@@ -45,6 +45,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f132537f52f10204981c1da053467f98, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  TestSelected: 0
+  Choice:
+  - "\u79FB\u52D5"
   Type: 
 --- !u!1 &1261965432558483499
 GameObject:
@@ -108,7 +111,7 @@ MeshRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 10303, guid: 0000000000000000f000000000000000, type: 0}
+  - {fileID: 2100000, guid: 2153d7010d1c96b46838718e3c4b6b50, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0

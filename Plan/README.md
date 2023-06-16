@@ -23,8 +23,15 @@
     - [ ] 文本編輯器 unit test (榮)
     - [ ] 文本編輯器 final code (榮)
 ## 專案分層
+### Support
+dnd 規則之外輔助用的系統
+1. 基本物理規則
+1. 文本陳述
 ### Business Layer
 dnd 核心玩法
+1. 角色基本數值
+1. 其他互動物件數值
+1. 骰子系統(戰鬥系統)
 ### User Case
 使用者透過我們這套系統會做的一切行為
 * Idle
@@ -35,5 +42,7 @@ dnd 核心玩法
 1. 展示層
     * CharacterD
     * TileD
+    * 文本
+    * 物理展現
 1. 輸入層
     * MainProcess
