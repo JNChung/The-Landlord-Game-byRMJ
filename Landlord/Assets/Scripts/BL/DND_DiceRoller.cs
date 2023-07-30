@@ -5,7 +5,7 @@
 /// </summary>
 public class DND_Dice
 {
-    public static int Roll(string diceString)
+    public int Roll(string diceString)
     {
         string[] parts = diceString.Split('d');
         if (parts.Length != 2)
