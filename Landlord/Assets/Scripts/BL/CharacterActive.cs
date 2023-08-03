@@ -39,7 +39,7 @@ public class DndBuff
 }
 public class DndCharacter : ICanMove//, ICanFight
 {
-    // 戰鬥屬性
+    // 基本屬性
     /// <summary>
     /// 力量
     /// </summary>
@@ -56,16 +56,26 @@ public class DndCharacter : ICanMove//, ICanFight
     /// 智力
     /// </summary>
     public int Intelligence;
-
-    // 戰鬥屬性
+    // (受法術、裝備等)增益值
     /// <summary>
     /// 力量
     /// </summary>
     public int StrengthWithBuff => ComputeBuff(nameof(DndCharacter.Strength));
-
-    private int ComputeBuff(string v)
+    /// <summary>
+    /// 敏捷
+    /// </summary>
+    public int DexterityWithBuff => ComputeBuff(nameof(DndCharacter.Dexterity));
+    /// <summary>
+    /// 體質
+    /// </summary>
+    public int ConstitutionWithBuff => ComputeBuff(nameof(DndCharacter.Constitution));  //todo: 重算 CurrentHp
+    /// <summary>
+    /// 智力
+    /// </summary>
+    public int IntelligenceWithBuff => ComputeBuff(nameof(DndCharacter.Intelligence));
+    private int ComputeBuff(string property)
     {
-        switch (v)
+        switch (property)
         {
             case nameof(DndCharacter.Strength):
                 return this.Strength + buffs.Sum(buff => buff.Strength);
@@ -79,21 +89,6 @@ public class DndCharacter : ICanMove//, ICanFight
             default: return 0;
         }
     }
-
-    /// <summary>
-    /// 敏捷
-    /// </summary>
-    public int DexterityWithBuff => ComputeBuff(nameof(DndCharacter.Dexterity));
-    /// <summary>
-    /// 體質
-    /// </summary>
-    public int ConstitutionWithBuff => ComputeBuff(nameof(DndCharacter.Constitution));  //todo: 重算 CurrentHp
-    /// <summary>
-    /// 智力
-    /// </summary>
-    public int IntelligenceWithBuff => ComputeBuff(nameof(DndCharacter.Intelligence));
-
-
     public void Init(int strength, int dexterity, int constitution, int intelligence)
     {
         this.Strength = strength;
@@ -101,31 +96,31 @@ public class DndCharacter : ICanMove//, ICanFight
         this.Constitution = constitution;
         this.Intelligence = intelligence;
     }
-
-    //加值 (computed)
     public int BaseHp;
     public int MaxHp => BaseHp + ConstitutionBonus;
     public int CurrentHp;
+    // 加值：用來對判定成功加成機率/成效，是由增益後屬性計算而得
     public int StrengthBonus => ComputeBonus(StrengthWithBuff) + EquipmentList.Sum(i => i.StrengthBonus);
     public int DexterityBonus => ComputeBonus(DexterityWithBuff) + EquipmentList.Sum(i => i.DexterityBonus);
     public int ConstitutionBonus => ComputeBonus(ConstitutionWithBuff) + EquipmentList.Sum(i => i.ConstitutionBonus);
     public int IntelligenceBonus => ComputeBonus(IntelligenceWithBuff) + EquipmentList.Sum(i => i.IntelligenceBonus);
     public int ArmorClass => 10 + DexterityBonus + ConstitutionBonus + EquipmentList.Sum(i => i.ArmorClass); //AC
-
-    public int Initiative { get; internal set; }
-
-    HashSet<Equipment> EquipmentList;
-    //todo: 陳列裝備
-
+    HashSet<Equipment> EquipmentList; //todo: 陳列裝備
     public List<DndBuff> buffs;
-
-    /// <summary>
-    /// 計算加值
-    /// </summary>
     int ComputeBonus(float prop)
     {
         return ((prop - 10) / 2).ToIntTruncate();
     }
+    // 回合制戰鬥的順序
+    public int Initiative { get; internal set; }
+
+    //Q: 升級的機制?
+    void Upgrade()
+    {
+        // 決定要加強哪個屬性
+
+    }
+    //有哪些要素要顯示給使用者
 
 
 
@@ -163,21 +158,14 @@ public class DndCharacter : ICanMove//, ICanFight
 
 
     #endregion
-    #region ICanFight
-    // todo: 下禮拜
+    // todo: 待討論
     //命中率
     //近戰 1d20 + 力量加值 + 裝備加成 + buff加成
     //遠程 1d20 + 敏捷加值 (敵人AC)
     //法術 防禦方要骰(1d20 + 智力)  骰過傷害值 則傷害減半
+    // 增益型法術/道具/裝備  之間的行為和區別??
+    // debuff??
 
-
-    #endregion
-
-    void Upgrade()
-    {
-        // 決定要加強哪個屬性
-
-    }
 
     // 頭銜?
 
@@ -202,10 +190,10 @@ public class DndCharacter : ICanMove//, ICanFight
     }
     public DndCharacter() { }
 
-    public void Use(string skillOrTool, Vector3Int enemyPosition)
+    public void Use(string skillOrTool, Vector3Int enemyPosition) //動作 指定位置
     {
         // 檢查角色是否有
-        IDndObject obj = this.Get(skillOrTool);
+        DndObject obj = this.Has(skillOrTool);
 
         if (obj != null)
         {
@@ -217,7 +205,7 @@ public class DndCharacter : ICanMove//, ICanFight
         }
     }
 
-    private DndObject Get(string skillOrTool)
+    private DndObject Has(string skillOrTool) //todo: 確認擁有技能或道具
     {
         throw new NotImplementedException();
     }

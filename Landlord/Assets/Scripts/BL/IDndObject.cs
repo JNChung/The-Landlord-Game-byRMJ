@@ -4,7 +4,7 @@ using UnityEngine;
 public abstract class DndObject
 {
     public abstract void Buff(DndCharacter character);
-    public abstract void Use(Vector3Int position);
+    public abstract void Effect(Vector3Int position);
 }
 
 
@@ -52,7 +52,7 @@ public class Weapon : DndObject
         throw new NotImplementedException();
     }
 
-    public override void Use(Vector3Int position)
+    public override void Effect(Vector3Int position)
     {
         DndCharacter enemy = DndHelper.GetCharacter(position);
         if (Hit(enemy))
