@@ -186,7 +186,7 @@ public class UserInfo
 {
     // 目前的狀態
     public ProcessType CurrentProcess;
-    public DndCharacter CurrentCharacter;
+    public DndCharacter_Fight CurrentCharacter;
     public GameObject SelectedGameObject;
 }
 public enum ProcessType

@@ -13,7 +13,7 @@ public class CharacterD : MonoBehaviour, UiComponent
     [SerializeField] bool TestSelected;
 
     //私有變數
-    DndCharacter character;
+    DndCharacter_Fight character;
     Animator animator;
     Tile moveTarget;
     private bool hasMoveTarget => moveTarget != null;
@@ -30,7 +30,7 @@ public class CharacterD : MonoBehaviour, UiComponent
     void Start()
     {
         InitialPosition();
-        character = new DndCharacter(100, transform.position.ToV3Int(), 3);
+        character = new DndCharacter_Fight(100, transform.position.ToV3Int(), 3);
         //animator = GetComponent<Animator>();
     }
 
